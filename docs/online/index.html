@@ -1,0 +1,1936 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Troll Face Clipz Online</title>
+<meta name="description" content="Post your best gaming clips and watch everyone else's. Problem?">
+<meta property="og:title" content="Troll Face Clipz Online">
+<meta property="og:description" content="Post your best gaming clips and watch everyone else's. Problem?">
+<meta property="og:image" content="logo.png">
+<link rel="icon" href="logo.png">
+<!-- phone app: "Add to Home Screen" gives an icon and opens full screen -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0c0c0e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Clipz Online">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700&display=swap">
+<script src="../vendor/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#0c0c0e; --panel:#151519; --panel2:#1d1d23; --line:#2b2b34; --text:#f3f3f5; --muted:#9c9cab;
+  --acc:#d7ff3a; --acc-ink:#121400; --red:#ff4d6d;
+  --display:"Bungee","Impact",system-ui,sans-serif; --body:"Inter",system-ui,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 var(--body)}
+[hidden]{display:none!important}
+img{max-width:100%}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:8px 13px;transition:background .12s,border-color .12s}
+button:hover:not(:disabled){border-color:#4c4c5a;background:#25252d}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.primary{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:700}
+.primary:hover:not(:disabled){background:var(--acc);filter:brightness(1.08)}
+.danger{color:var(--red)}
+.link{background:none;border:none;padding:0;color:var(--acc);text-decoration:underline}
+.link:hover:not(:disabled){background:none}
+input[type=text],input[type=email],input[type=password],textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+textarea{resize:vertical;min-height:64px}
+.muted{color:var(--muted)} .small{font-size:12px}
+.spacer{flex:1}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.hbar{display:flex;align-items:center;gap:10px;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;text-decoration:none;color:inherit}
+.brand img{width:40px;height:40px;border-radius:10px;object-fit:cover}
+.brand h1{margin:0;font:400 20px/1 var(--display);letter-spacing:.5px;white-space:nowrap}
+.brand h1 span{color:var(--acc)}
+.me{display:flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border-radius:999px}
+.banner{flex:1 1 0;min-width:60px;height:56px;border-radius:12px;background:url("logo.png") center/100% 100% no-repeat;display:block}
+.face{position:relative;overflow:hidden;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:17px;background:var(--panel2);border:1px solid var(--line);flex:none}
+.face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.avatar-edit{display:flex;align-items:center;gap:12px}
+.pw{position:relative;display:block}
+.pw input{padding-right:44px}
+.pw .eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:4px 8px;background:none;border:0;font-size:16px;opacity:.6;cursor:pointer}
+.pw .eye:hover,.pw .eye[aria-pressed=true]{opacity:1}
+.pwdots{flex:1;letter-spacing:3px;color:var(--muted)}
+.pwform{display:flex;flex-direction:column;gap:10px;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.pwform input{background:var(--panel)}
+.badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700}
+#chat{display:flex;flex-direction:column;gap:10px;height:calc(100vh - 260px);min-height:280px}
+#chat[hidden]{display:none}
+.chatlist{flex:1;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.msg{display:flex;gap:10px;align-items:flex-start;padding:6px 6px;border-radius:10px;position:relative}
+.msg:hover{background:var(--panel2)}
+.msg .face{width:34px;height:34px;font-size:18px;margin-top:2px}
+.msg .mbody{min-width:0;flex:1}
+.msg .mhead{display:flex;gap:8px;align-items:baseline}
+.msg .mname{font-weight:700}
+.msg .mname.owner{color:var(--acc)}
+.msg .mtext{white-space:pre-wrap;overflow-wrap:anywhere}
+.msg .mtext a{color:var(--acc)}
+.msg .mtools{position:absolute;right:6px;top:-6px;display:flex;gap:2px;opacity:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:2px;transition:opacity .1s}
+.msg .mtools:empty{display:none}
+.msg:hover .mtools,.msg .mtools:focus-within{opacity:1}
+.msg .mtools button{padding:3px 7px;font-size:13px;border:none;background:none;line-height:1.2}
+.msg .mtools button:hover{background:var(--panel2)}
+.msg .mdel{font-size:12px}
+.rxns{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.rxns:empty{display:none}
+.rx{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:13px;background:var(--panel2);border:1px solid var(--line);line-height:1.4}
+.rx b{font-size:12px;font-weight:600;color:var(--muted)}
+.rx.mine{background:rgba(215,255,58,.12);border-color:rgba(215,255,58,.6)}
+.rx.mine b{color:var(--acc)}
+.rx.add{color:var(--muted);padding:2px 9px;opacity:0;transition:opacity .1s}
+.msg:hover .rx.add{opacity:1}
+.rpick{position:fixed;z-index:70;display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.55)}
+.rpick button{font-size:20px;padding:4px 6px;border:none;background:none;border-radius:8px;line-height:1.2}
+.rpick button:hover{background:var(--panel2);transform:scale(1.15)}
+.rpick:not(.epanel){grid-template-columns:repeat(7,1fr)}
+.rpick .rmore{font-size:20px;font-weight:700;color:var(--muted);border:1px dashed var(--line)!important}
+.rpick .rmore:hover{color:var(--acc)}
+/* full emoji panel */
+.epanel{display:block;width:min(372px,calc(100vw - 16px));padding:0;overflow:hidden}
+.epbody{max-height:min(380px,60vh);overflow-y:auto;padding:4px 8px 10px}
+.eph{position:sticky;top:0;z-index:1;background:var(--panel);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:8px 2px 4px}
+.eph.special{color:#ff7eb6}
+.epg{display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
+.epg button{font-size:22px;padding:3px 0;border:none;background:none;border-radius:8px;line-height:1.25}
+.epg button:hover{background:var(--panel2);transform:scale(1.15)}
+.msg.cont{padding-top:0}
+.msg.cont .face{visibility:hidden;height:0}
+.msg.cont .mhead{display:none}
+.chatform{display:flex;gap:8px}
+.typing{height:16px;margin:-4px 0 -2px 4px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .2s}
+.typing.on{opacity:1}
+.typing b{color:var(--text);font-weight:600}
+.tdots{display:inline-flex;gap:3px}
+.tdots i{width:4px;height:4px;border-radius:50%;background:var(--acc);animation:tdot 1.2s infinite ease-in-out}
+.tdots i:nth-child(2){animation-delay:.15s}.tdots i:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-3px);opacity:1}}
+.typing .recd{width:7px;height:7px;border-radius:50%;background:var(--red);animation:recpulse 1s infinite}
+.seen{font-size:11px;color:var(--muted);margin-top:3px}
+.seen.yes{color:#3ddc97}
+#recCancel{padding:8px 12px}
+.recbar{flex:1;display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--red);border-radius:9px;padding:0 12px;font-variant-numeric:tabular-nums}
+.recdot{width:10px;height:10px;border-radius:50%;background:var(--red);animation:recpulse 1s infinite}
+@keyframes recpulse{50%{opacity:.3}}
+#micBtn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px}
+#micBtn svg{width:18px;height:18px}
+#micBtn.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700}
+/* voice message player */
+.vplayer{display:inline-flex;align-items:center;gap:10px;margin-top:4px;padding:6px 14px 6px 6px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);max-width:100%}
+.vplay{width:34px;height:34px;border-radius:50%;border:none;padding:0;display:grid;place-items:center;background:var(--acc);color:var(--acc-ink);flex:none}
+.vplay:hover:not(:disabled){background:var(--acc);filter:brightness(1.08)}
+.vplay svg{width:14px;height:14px}
+.vwave{display:block;width:180px;height:30px;cursor:pointer;flex:none;touch-action:none}
+.vwave.scrubbing{cursor:grabbing}
+.vtime{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px}
+/* volume controls slide out while a voice message plays, and slide back in when it stops */
+.vvolwrap{display:flex;align-items:center;gap:4px;overflow:hidden;max-width:0;opacity:0;margin-left:-10px;transform:translateX(-8px);
+  transition:max-width .4s cubic-bezier(.22,1,.36,1),opacity .25s ease,margin-left .4s cubic-bezier(.22,1,.36,1),transform .4s cubic-bezier(.22,1,.36,1)}
+.vvolwrap.open{max-width:120px;opacity:1;margin-left:2px;transform:none}
+/* ---- totally unnecessary VFX ---- */
+.vplayer{position:relative;transition:box-shadow .4s ease,border-color .4s ease}
+.vplayer.playing{border-color:rgba(215,255,58,.55);animation:vglow 1.6s ease-in-out infinite}
+@keyframes vglow{0%,100%{box-shadow:0 0 0 0 rgba(215,255,58,.0),0 0 18px rgba(215,255,58,.18)}50%{box-shadow:0 0 0 3px rgba(215,255,58,.12),0 0 34px rgba(215,255,58,.42)}}
+.vplay{position:relative}
+.vplayer.playing .vplay::before{content:"";position:absolute;inset:-5px;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 55%,rgba(215,255,58,.95) 75%,#fff 80%,transparent 86%);
+  -webkit-mask:radial-gradient(circle,transparent 58%,#000 61%);mask:radial-gradient(circle,transparent 58%,#000 61%);animation:vspin .9s linear infinite}
+@keyframes vspin{to{transform:rotate(360deg)}}
+.vplay:active{transform:scale(.9)}
+.vspark{position:absolute;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:4;
+  background:var(--c,#d7ff3a);box-shadow:0 0 8px var(--c,#d7ff3a),0 0 16px var(--c,#d7ff3a);
+  animation:vspark var(--t,.7s) cubic-bezier(.15,.8,.3,1) forwards}
+@keyframes vspark{0%{transform:translate(-50%,-50%) scale(1.3);opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(0);opacity:0}}
+.vvolwrap.open{position:relative}
+.vvolwrap.open::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);animation:vshine .9s .15s ease-out forwards}
+@keyframes vshine{to{transform:translateX(120%)}}
+.vvolwrap.open .vvolbtn svg{animation:vpop .45s cubic-bezier(.34,1.8,.64,1)}
+@keyframes vpop{0%{transform:scale(.2) rotate(-40deg)}100%{transform:none}}
+.vvolwrap.open .vvol::-webkit-slider-thumb{box-shadow:0 0 10px rgba(215,255,58,.9)}
+@media (prefers-reduced-motion:reduce){.vvolwrap{transition:none}.vplayer.playing,.vplayer.playing .vplay::before,.vspark,.vvolwrap.open::after,.vvolwrap.open .vvolbtn svg{animation:none!important}.vspark{display:none}}
+.vvolbtn{background:none;border:none;padding:4px;color:var(--muted);display:grid;place-items:center}
+.vvolbtn:hover:not(:disabled){background:none;color:var(--text)}
+.vvolbtn svg{width:18px;height:18px}
+.vvol{-webkit-appearance:none;appearance:none;width:64px;height:4px;border-radius:4px;background:linear-gradient(to right,var(--acc) var(--v,100%),rgba(255,255,255,.2) var(--v,100%));cursor:pointer}
+.vvol::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;border:none}
+.chatform input{flex:1}
+.chat-empty{margin:auto;text-align:center;color:var(--muted)}
+.storagebox{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+.sbar{height:8px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.sbar>div{height:100%;width:0;background:var(--acc);transition:width .4s}
+.sbar>div.warn{background:#ffb020}
+.sbar>div.full{background:var(--red)}
+.pcount{grid-column:1/-1}
+.storenote{font-style:italic;margin-left:4px}
+.ctrow{display:flex;align-items:center;gap:8px;min-width:0}
+.ctrow .ctitle{min-width:0}
+/* ⓘ "not recorded with Troll Face Clipz" badge + hover tooltip */
+.notfc{position:relative;flex:none;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;
+  border:1.5px solid var(--muted);color:var(--muted);font:700 11px/1 Georgia,serif;font-style:italic;cursor:help;vertical-align:middle}
+.notfc:hover,.notfc:focus{border-color:var(--acc);color:var(--acc);outline:none}
+.notfc-tip{position:absolute;bottom:calc(100% + 8px);right:-8px;width:max-content;max-width:230px;padding:7px 10px;border-radius:9px;
+  background:#000;color:#fff;border:1px solid var(--line);font:500 12px/1.35 var(--body);font-style:normal;text-align:left;
+  box-shadow:0 6px 20px rgba(0,0,0,.5);opacity:0;transform:translateY(4px);pointer-events:none;transition:opacity .15s,transform .15s;z-index:10}
+.notfc:hover .notfc-tip,.notfc:focus .notfc-tip{opacity:1;transform:none}
+#pInfo .notfc-tip{bottom:auto;top:calc(100% + 8px);right:auto;left:-8px}
+#pInfo{margin-right:auto}
+.presence{color:var(--muted)}
+.presence.on{color:#3ddc97;font-weight:600}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;gap:14px;align-items:center;cursor:pointer;min-width:0;transition:transform .12s,border-color .12s}
+.pcard:hover{transform:translateY(-2px);border-color:#4c4c5a}
+.pcard .face{width:64px;height:64px;font-size:32px}
+.pbody{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pname{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbio{color:var(--text);opacity:.85;font-size:13px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.avatar-edit .face{width:72px;height:72px;font-size:36px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-block:16px 4px}
+.chip{border-radius:999px;padding:6px 13px;font-size:13px}
+.chip[aria-pressed=true]{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
+.search{max-width:260px}
+.notice{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:12px 14px;margin-top:14px}
+.notice.warn{border-color:var(--red)}
+main{padding-block:12px calc(40px + env(safe-area-inset-bottom,0px))}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .12s,border-color .12s}
+.card:hover{transform:translateY(-2px);border-color:#4c4c5a}
+.thumb{position:relative;aspect-ratio:16/9;max-width:100%;background:#000 center/cover no-repeat}
+.thumb .dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.78);padding:1px 7px;border-radius:6px;font-size:12px;font-variant-numeric:tabular-nums}
+.cbody{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ctitle{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.byline{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);min-width:0}
+.byline .face{width:22px;height:22px;font-size:12px}
+.byline b{color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.byline b:hover{text-decoration:underline}
+.likes{margin-left:auto;white-space:nowrap}
+.empty{text-align:center;padding:60px 16px;color:var(--muted);grid-column:1/-1}
+.empty img{width:96px;border-radius:16px;filter:grayscale(1);opacity:.8}
+.empty h2{font:400 20px var(--display);color:var(--text);margin:14px 0 6px}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:16px;padding:0;width:min(520px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog.wide{width:min(1000px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.72)}
+.dh{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.dh h3{margin:0;flex:1;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.db{padding:16px;display:flex;flex-direction:column;gap:12px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:6px}
+.tabs button{flex:1}
+.tabs button[aria-pressed=true]{border-color:var(--acc);color:var(--acc)}
+.faces{display:flex;flex-wrap:wrap;gap:6px}
+.faces button{font-size:20px;padding:4px 8px}
+.faces button[aria-pressed=true]{border-color:var(--acc);background:#2a2f14}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:26px 16px;text-align:center;cursor:pointer}
+.drop.over{border-color:var(--acc);background:#1a1d10}
+.drop video{width:100%;max-height:260px;border-radius:10px;background:#000}
+.bar{height:8px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.bar>div{height:100%;width:0;background:var(--acc);transition:width .3s}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#pVideo{width:100%;max-height:62vh;background:#000;border-radius:10px;display:block}
+.caption{white-space:pre-wrap;overflow-wrap:anywhere}
+.linkbox{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;overflow-wrap:anywhere;user-select:all}
+#toasts{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;z-index:60}
+.toast{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--acc);padding:10px 14px;border-radius:10px;max-width:340px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.toast.warn{border-left-color:var(--red)}
+/* custom background from the app (🎨): see-through page, frosted panels */
+html.bg-on,html.bg-on body{background:transparent}
+html.bg-on header{background:rgba(12,12,14,calc(var(--pa,.78) * .7))}
+html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,html.bg-on .notice{background:rgba(21,21,25,var(--pa,.78));backdrop-filter:blur(var(--blur,10px))}
+/* pictures in the chat */
+.imgbtn{display:inline-grid;place-items:center;width:40px;padding:0;flex:none;color:#3ddc97;border-radius:50%}
+.imgbtn svg{width:22px;height:22px}
+.imgbtn:hover:not(:disabled){color:#fff;background:#3ddc97;border-color:#3ddc97}
+/* pictures waiting to be sent (like Discord) */
+.attachtray{display:flex;gap:10px;overflow-x:auto;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.attachtray[hidden]{display:none}
+.att{position:relative;flex:none;width:170px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.att img{width:100%;height:110px;object-fit:contain;border-radius:8px;background:#0008;cursor:zoom-in}
+.att .an{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att .atools{position:absolute;top:-10px;right:6px;display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:2px}
+.att .atools button{padding:4px 7px;border:none;background:none;font-size:14px;line-height:1}
+.att .atools button:hover{background:var(--panel2)}
+.att .atools .rm{color:var(--red)}
+.att.sending{opacity:.55}
+.mimg{display:block;margin-top:4px;max-width:min(340px,100%);max-height:300px;border-radius:12px;border:1px solid var(--line);cursor:zoom-in;background:var(--panel2);object-fit:cover}
+.mimg:hover{border-color:#4c4c5a}
+#chat.dropping .chatlist{border-color:var(--acc);box-shadow:inset 0 0 0 2px rgba(215,255,58,.35)}
+.imgdlg{width:auto;max-width:calc(100vw - 32px);background:#000;border-color:var(--line)}
+.imgdlg img{display:block;max-width:calc(100vw - 34px);max-height:calc(100vh - 100px);margin:0 auto}
+.imgbar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel)}
+/* @mentions */
+.mention{color:var(--acc);background:rgba(215,255,58,.12);border-radius:5px;padding:0 3px;font-weight:600;cursor:pointer}
+.mention:hover{text-decoration:underline}
+.mention.mine{background:var(--acc);color:var(--acc-ink)}
+.msg.mentioned{background:rgba(215,255,58,.07);box-shadow:inset 3px 0 0 var(--acc)}
+.msg.mentioned:hover{background:rgba(215,255,58,.11)}
+.msg>.face,.msg .mname{cursor:pointer}
+.msg .mname:hover{text-decoration:underline}
+.chatform{position:relative}
+.mpop{position:absolute;left:0;bottom:calc(100% + 6px);min-width:220px;max-width:320px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,.55);z-index:8;display:flex;flex-direction:column}
+.mpop button{display:flex;align-items:center;gap:8px;border:none;background:none;padding:6px 8px;border-radius:8px;text-align:left}
+.mpop button .face{width:24px;height:24px;font-size:13px}
+.mpop button.sel,.mpop button:hover:not(:disabled){background:#2a2f14}
+.mpop .mph{font-size:11px;color:var(--muted);padding:4px 8px 2px}
+/* profile pages */
+#userDlg{width:min(780px,calc(100vw - 32px))}
+#userDlg .db{overflow-y:auto;max-height:calc(100vh - 110px)}
+.uhead{display:flex;gap:16px;align-items:center;min-width:0}
+.uhead .face{width:96px;height:96px;font-size:48px}
+.uname{font:400 22px/1.15 var(--display);overflow-wrap:anywhere}
+.uname.owner{color:var(--acc)}
+.ustats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ustat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;min-width:0}
+.ustat b{display:block;font-size:20px;overflow-wrap:anywhere}
+.ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+@media (max-width:560px){.uhead .face{width:64px;height:64px;font-size:32px}.ustat b{font-size:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:560px){.brand h1{font-size:16px}.search{max-width:none;flex:1 1 100%}}
+/* ---- phones ---- */
+@media (max-width:640px){
+  .hbar{padding-block:8px}
+  .banner{height:46px}
+  #uploadBtn{padding:8px 10px}
+  .storagebox{margin-top:8px;padding:8px 12px}
+  .storenote{display:none}
+  .toolbar{padding-block:10px 2px;gap:6px}
+  .toolbar .spacer{display:none}
+  .search{flex:1 1 200px}
+  .grid{grid-template-columns:1fr;gap:12px}
+  /* the chat fills the screen under the header; dvh follows the phone's keyboard and address bar */
+  #chat{height:calc(100vh - 200px);height:calc(100dvh - 200px);min-height:240px;gap:6px}
+  .chatlist{padding:6px 6px;border-radius:12px}
+  .chatform{gap:6px}
+  #micBtn{padding:8px 10px}
+  #chatSend{padding:8px 12px}
+  .imgbtn{width:38px}
+  .vwave{width:120px}
+  .mimg{max-width:100%}
+  .att{width:140px}
+  .att img{height:90px}
+  dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}
+  dialog.wide{width:calc(100vw - 16px)}
+  .db{padding:12px}
+  #toasts{left:16px;right:16px}
+  .toast{max-width:none}
+  /* iPhones zoom into any text box under 16px; this stops that */
+  input[type=text],input[type=email],input[type=password],textarea{font-size:16px}
+}
+/* touch screens have no hover: tap a message to show its 😀 / ✕ buttons, and "+ react" is always visible */
+@media (hover:none){
+  .msg:hover{background:none}
+  .msg .mtools{opacity:0;pointer-events:none}
+  .msg.tap{background:var(--panel2)}
+  .msg.tap .mtools{opacity:1;pointer-events:auto}
+  .rx.add{opacity:.7}
+  .card:hover,.pcard:hover{transform:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap hbar">
+    <a class="banner" href="#" id="home" aria-label="Troll Face Clipz Online: show everyone's clips"></a>
+    <button id="uploadBtn" class="primary" hidden>⬆ Upload clip</button>
+    <button id="signInBtn" class="primary">Sign in / Sign up</button>
+    <button id="meBtn" class="me" hidden><span id="meFace" class="face">😏</span><span id="meName"></span></button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="storageBox" class="storagebox" hidden>
+    <div class="row small"><span>☁ Server storage</span><span class="muted storenote">wenn das hier voll ist odindin done</span><div class="spacer"></div><span id="storageTxt" class="muted"></span></div>
+    <div class="sbar"><div id="storageBar"></div></div>
+  </div>
+  <div class="toolbar">
+    <button class="chip" id="fAll" aria-pressed="true">Everyone</button>
+    <button class="chip" id="fMine" aria-pressed="false" hidden>My clips</button>
+    <button class="chip" id="fPlayers" aria-pressed="false">👥 Players</button>
+    <button class="chip" id="fChat" aria-pressed="false">💬 Chat <span id="chatBadge" class="badge" hidden></span></button>
+    <button class="chip" id="fUser" aria-pressed="false" hidden></button>
+    <div class="spacer"></div>
+    <input type="text" id="q" class="search" placeholder="Search clips or players" aria-label="Search clips">
+    <button id="refresh" title="Load new clips">↻</button>
+  </div>
+  <div id="notice" class="notice" hidden></div>
+  <main><div id="grid" class="grid"></div>
+    <section id="chat" hidden>
+      <div id="chatList" class="chatlist" aria-live="polite"></div>
+      <div id="typingLine" class="typing" aria-live="polite"></div>
+      <div id="attachTray" class="attachtray" hidden></div>
+      <form id="chatForm" class="chatform">
+        <div id="mentionPop" class="mpop" role="listbox" aria-label="Mention a player" hidden></div>
+        <button type="button" id="imgBtn" class="imgbtn" title="Add pictures (or paste with Ctrl+V, or drop them here)" aria-label="Add pictures"></button>
+        <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden>
+        <input type="text" id="chatInput" maxlength="500" placeholder="Say something… type @ to mention someone (Enter to send)" autocomplete="off" aria-label="Chat message">
+        <div id="recBar" class="recbar" hidden><span class="recdot"></span><span id="recTime">0:00</span><span class="muted small">Recording… click Send when you're done</span></div>
+        <button type="button" id="recCancel" class="danger" title="Cancel recording" hidden>✕</button>
+        <button type="button" id="micBtn" title="Record a voice message (up to 60 seconds)" aria-label="Record a voice message"></button>
+        <button type="submit" class="primary" id="chatSend">Send</button>
+      </form>
+      <div id="chatMsg" class="small muted"></div>
+    </section>
+  </main>
+</div>
+
+<!-- sign in / sign up -->
+<dialog id="authDlg">
+  <div class="dh"><h3>Troll Face Clipz Online</h3><button id="authClose" aria-label="Close">✕</button></div>
+  <form class="db" id="authForm">
+    <div class="tabs"><button type="button" id="tIn" aria-pressed="true">Sign in</button><button type="button" id="tUp" aria-pressed="false">Create account</button></div>
+    <label class="f">Username <input type="text" id="aUser" autocomplete="username" maxlength="20" required></label>
+    <label class="f">Password <span class="pw"><input type="password" id="aPass" autocomplete="current-password" minlength="6" required><button type="button" class="eye" aria-label="Show password" title="Show password">👁</button></span></label>
+    <div id="authMsg" class="small muted"></div>
+    <div class="row"><div class="spacer"></div><button type="submit" class="primary" id="authGo">Sign in</button></div>
+  </form>
+</dialog>
+
+<!-- profile -->
+<dialog id="profDlg">
+  <div class="dh"><h3 id="profTitle">Pick your username</h3><button id="profClose" aria-label="Close">✕</button></div>
+  <form class="db" id="profForm">
+    <label class="f">Username <input type="text" id="pHandle" maxlength="20" readonly></label>
+    <div class="f"><span class="small muted">Profile picture</span>
+      <div class="avatar-edit">
+        <span class="face" id="pAvatar">😏</span>
+        <button type="button" id="pAvatarPick">Upload picture</button>
+        <button type="button" class="danger" id="pAvatarDel" hidden>Remove</button>
+        <input type="file" id="pAvatarFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+      </div>
+    </div>
+    <div class="f"><span class="small muted">Emoji (shown when you have no picture)</span><div class="faces" id="pFaces"></div></div>
+    <label class="f">Bio <textarea id="pBio" maxlength="200" placeholder="What do you play?"></textarea></label>
+    <div class="f" id="pwBox" hidden><span class="small muted">Password</span>
+      <div class="row"><span class="pwdots">••••••••</span><button type="button" id="pwOpen">🔑 Change password</button></div>
+      <div id="pwForm" class="pwform" hidden>
+        <label class="f">Current password <span class="pw"><input type="password" id="pwOld" autocomplete="current-password"><button type="button" class="eye" aria-label="Show password" title="Show password">👁</button></span></label>
+        <label class="f">New password <span class="pw"><input type="password" id="pwNew" autocomplete="new-password" minlength="6"><button type="button" class="eye" aria-label="Show password" title="Show password">👁</button></span></label>
+        <div class="row"><span id="pwMsg" class="small muted"></span><div class="spacer"></div><button type="button" id="pwCancel">Cancel</button><button type="button" class="primary" id="pwGo">Update password</button></div>
+      </div>
+    </div>
+    <div class="row"><button type="button" class="danger" id="signOut">Sign out</button><div class="spacer"></div><button type="submit" class="primary" id="profSave">Save</button></div>
+  </form>
+</dialog>
+
+<!-- upload -->
+<dialog id="upDlg">
+  <div class="dh"><h3>Upload a clip</h3><button id="upClose" aria-label="Close">✕</button></div>
+  <div class="db">
+    <div class="drop" id="drop" tabindex="0">
+      <div id="dropTxt"><b>Drop an MP4 or WebM clip here</b><br><span class="muted small">or click to pick a file (up to 50 MB; bigger clips get compressed).</span></div>
+      <video id="upPreview" controls playsinline hidden></video>
+    </div>
+    <input type="file" id="upFile" accept="video/mp4,video/webm" hidden>
+    <label class="f">Title <input type="text" id="upTitle" maxlength="80" placeholder="1v5 clutch, no big deal"></label>
+    <label class="f">Caption <textarea id="upCaption" maxlength="500" placeholder="Problem?"></textarea></label>
+    <div id="upInfo" class="small muted"></div>
+    <div id="upProg" hidden><div class="row small muted"><span id="upStage">Uploading…</span><div class="spacer"></div><span id="upPct"></span></div><div class="bar"><div id="upBar"></div></div></div>
+    <div class="row"><div class="spacer"></div><button class="primary" id="upPost" disabled>Post clip</button></div>
+  </div>
+</dialog>
+
+<!-- player -->
+<dialog id="playDlg" class="wide">
+  <div class="dh"><h3 id="pTitle"></h3><button id="pClose" aria-label="Close">✕</button></div>
+  <div class="db">
+    <video id="pVideo" controls playsinline></video>
+    <div class="row">
+      <div class="byline" id="pBy" style="font-size:13px"></div>
+      <div class="spacer"></div>
+      <button id="pLike">♡ Like</button>
+      <button id="pShare">↗ Share</button>
+      <button id="pDl">⬇ Download</button>
+      <button id="pDel" class="danger" hidden>Delete</button>
+    </div>
+    <div id="pCaption" class="caption"></div>
+    <div id="pShareBox" hidden>
+      <div class="small muted">Link to this clip:</div>
+      <div class="linkbox" id="pLink"></div>
+    </div>
+  </div>
+</dialog>
+
+<!-- full-size picture from the chat -->
+<dialog id="imgDlg" class="imgdlg" aria-label="Picture">
+  <img id="imgBig" alt="">
+  <div class="imgbar"><span id="imgWho" class="small muted"></span><div class="spacer"></div><button id="imgSave">⬇ Save</button><button id="imgClose" aria-label="Close">✕</button></div>
+</dialog>
+
+<!-- a player's profile page -->
+<dialog id="userDlg">
+  <div class="dh"><h3 id="uTitle">Player</h3><button id="uClose" aria-label="Close">✕</button></div>
+  <div class="db" id="uBody"></div>
+</dialog>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+'use strict';
+const SUPABASE_URL = 'https://jzbwqgsymxjkkuttskdw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_37a3FrZDrCr4wchIZiw3Gw_vgUAnCeU';   // publishable key: safe to ship in a website
+const BUCKET = 'clips';
+const MAX_BYTES = 49 * 1024 * 1024;
+const FACES = ['😏','😈','🤡','💀','👽','🤖','🐸','🔥','😎','🥶','🤓','🗿'];
+const $ = s => document.querySelector(s);
+
+let sb = null, session = null, me = null;      // me = my profile row
+let clips = [], myLikes = new Set(), filter = {kind: 'all', uid: null}, query = '', current = null, loaded = false;
+
+/* ---------- helpers ---------- */
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'class') el.className = v;
+    else if (k === 'text') el.textContent = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (k === 'style') el.style.cssText = v;
+    else el.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => c != null && el.append(c));
+  return el;
+}
+function toast(msg, warn) { const t = h('div', {class: 'toast' + (warn ? ' warn' : ''), text: msg}); $('#toasts').append(t); setTimeout(() => t.remove(), 4500); }
+const fmtTime = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const fmtSize = b => b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : Math.round(b / 1e3) + ' KB';
+function ago(t) {
+  const s = (Date.now() - new Date(t).getTime()) / 1000;
+  if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago'; if (s < 86400 * 30) return Math.floor(s / 86400) + 'd ago';
+  return new Date(t).toLocaleDateString();
+}
+const pub = path => path ? sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl : '';
+const siteUrl = () => location.protocol.startsWith('http') ? location.origin + location.pathname : '';
+const errMsg = e => (e && (e.message || e.error_description)) || String(e);
+
+/* ---------- data ---------- */
+async function loadClips() {
+  const {data, error} = await sb.from('clips')
+    .select('id,user_id,title,caption,video_path,thumb_path,duration,size,mime,created_at,profiles!clips_user_id_fkey(username,face),likes(count)')
+    .order('created_at', {ascending: false}).limit(300);
+  loaded = true;
+  if (error) {
+    showNotice(/Could not find the table|relation .* does not exist/i.test(error.message)
+      ? 'The database isn\'t set up yet. Run supabase/setup.sql in the Supabase SQL Editor.' : 'Could not load clips: ' + error.message, true);
+    render(); return;
+  }
+  showNotice('');
+  clips = data.map(c => ({...c, likeCount: (c.likes && c.likes[0] && c.likes[0].count) || 0}));
+  loadStorage();
+  render(); openFromHash();
+  if (current) { const fresh = clips.find(c => c.id === current.id); if (fresh) { current = fresh; updateLike(); } }
+}
+async function loadMine() {
+  me = null; myLikes = new Set();
+  if (session) {
+    const uid = session.user.id;
+    const [p, l] = await Promise.all([
+      sb.from('profiles').select('*').eq('id', uid).maybeSingle(),
+      sb.from('likes').select('clip_id').eq('user_id', uid),
+    ]);
+    me = p.data || null;
+    (l.data || []).forEach(r => myLikes.add(r.clip_id));
+    startChatLive();   // live chat (and the unread badge) while signed in
+  } else stopChatLive();
+  renderMe();
+  if (filter.kind === 'chat') openChat();
+  if (session && !me) openProfile();
+}
+
+/* ---------- profile pictures ----------
+   Each player's picture lives at clips/<their id>/avatar.jpg. If there isn't one, the
+   image fails to load and their emoji shows instead. */
+const noAvatar = new Set(), avatarVer = new Map();
+const avatarPath = uid => uid + '/avatar.jpg';
+function avatarUrl(uid) {
+  const v = avatarVer.get(uid) || Math.floor(Date.now() / 600000);   // refresh at most every 10 min
+  return pub(avatarPath(uid)) + '?v=' + v;
+}
+function faceEl(uid, emoji) {
+  const el = h('span', {class: 'face', text: emoji || '😏'});
+  if (uid && sb && !noAvatar.has(uid)) {
+    const img = h('img', {alt: '', src: avatarUrl(uid)});
+    img.onerror = () => { noAvatar.add(uid); img.remove(); };
+    el.append(img);
+  }
+  return el;
+}
+// Center-crops any image to a 256×256 JPEG.
+async function squareJpeg(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('That file isn\'t a picture we can read.')); i.src = url; });
+    const s = Math.min(img.naturalWidth, img.naturalHeight);
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    c.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 256, 256);
+    return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.88));
+  } finally { URL.revokeObjectURL(url); }
+}
+function refreshAvatarPreview() {
+  const uid = session && session.user.id;
+  $('#pAvatar').replaceWith(Object.assign(faceEl(uid, pickedFace), {id: 'pAvatar'}));
+  $('#pAvatarDel').hidden = !uid || noAvatar.has(uid);
+  const img = $('#pAvatar img');
+  if (img) img.addEventListener('error', () => { $('#pAvatarDel').hidden = true; });
+}
+function avatarChanged(uid) {
+  avatarVer.set(uid, Date.now());
+  refreshAvatarPreview(); renderMe(); render();
+}
+$('#pAvatarPick').onclick = () => $('#pAvatarFile').click();
+$('#pAvatarFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f || !session) return;
+  const uid = session.user.id, b = $('#pAvatarPick'); b.disabled = true; b.textContent = 'Uploading…';
+  try {
+    const jpg = await squareJpeg(f);
+    await sb.storage.from(BUCKET).remove([avatarPath(uid)]);
+    const r = await sb.storage.from(BUCKET).upload(avatarPath(uid), jpg, {contentType: 'image/jpeg', cacheControl: '60'});
+    if (r.error) throw r.error;
+    noAvatar.delete(uid); avatarChanged(uid);
+    toast('Profile picture updated.');
+  } catch (err) { toast('Could not upload the picture: ' + errMsg(err), true); }
+  finally { b.disabled = false; b.textContent = 'Upload picture'; }
+};
+$('#pAvatarDel').onclick = async () => {
+  if (!session) return;
+  const uid = session.user.id;
+  const r = await sb.storage.from(BUCKET).remove([avatarPath(uid)]);
+  if (r.error) { toast('Could not remove the picture: ' + errMsg(r.error), true); return; }
+  noAvatar.add(uid); avatarChanged(uid);
+  toast('Profile picture removed.');
+};
+
+/* ---------- render ---------- */
+function showNotice(text, warn) { const n = $('#notice'); n.hidden = !text; n.className = 'notice' + (warn ? ' warn' : ''); n.textContent = text || ''; }
+function renderMe() {
+  $('#signInBtn').hidden = !!session;
+  $('#meBtn').hidden = !session;
+  $('#uploadBtn').hidden = !(session && me);
+  $('#fMine').hidden = !me;
+  $('#meFace').replaceWith(Object.assign(faceEl(me ? me.id : null, me ? me.face : '😏'), {id: 'meFace'}));
+  $('#meName').textContent = me ? me.username : 'Finish account';
+}
+/* ---------- players ---------- */
+let players = [], playersLoaded = false;
+async function loadPlayers() {
+  const {data, error} = await sb.from('profiles')
+    .select('*,clips!clips_user_id_fkey(count)')   // '*' keeps working before/after the version + last-online columns exist
+    .order('created_at', {ascending: true}).limit(1000);
+  playersLoaded = true;
+  if (error) { toast('Could not load players: ' + error.message, true); players = []; }
+  else players = data.map(p => ({...p, clipCount: (p.clips && p.clips[0] && p.clips[0].count) || 0}));
+  if (filter.kind === 'players') render();
+}
+// "● Online now · v1.9.6" / "Last online 2 h ago · v1.9.5". The app checks in every 2 minutes.
+function presenceLine(p) {
+  if (!p.last_seen && !p.app_version) return null;
+  const parts = [];
+  let on = false;
+  if (p.last_seen) {
+    const mins = (Date.now() - new Date(p.last_seen).getTime()) / 60000;
+    on = mins < 5;
+    parts.push(on ? 'Online now' : 'Last online ' + ago(p.last_seen));
+  }
+  if (p.app_version) parts.push('v' + p.app_version);
+  return h('div', {class: 'small presence' + (on ? ' on' : ''), text: (on ? '● ' : '') + parts.join(' · ')});
+}
+function renderPlayers(grid) {
+  let list = players;
+  if (query) { const q = query.toLowerCase(); list = list.filter(p => p.username.toLowerCase().includes(q) || (p.bio || '').toLowerCase().includes(q)); }
+  if (!list.length) {
+    const m = !playersLoaded ? ['Loading players…', ''] : query ? ['No matches', 'Try another name.'] : ['No players yet', 'Create an account to be the first.'];
+    grid.append(h('div', {class: 'empty'}, h('img', {src: 'logo.png', alt: ''}), h('h2', {text: m[0]}), h('div', {text: m[1]})));
+    return;
+  }
+  grid.append(h('div', {class: 'pcount muted small', text: `${list.length} player${list.length === 1 ? '' : 's'}`}));
+  for (const p of list) {
+    const isMe = session && p.id === session.user.id;
+    grid.append(h('article', {class: 'pcard', tabindex: '0', title: 'Open profile', onclick: () => openUser(p.id), onkeydown: e => { if (e.key === 'Enter') openUser(p.id); }},
+      faceEl(p.id, p.face),
+      h('div', {class: 'pbody'},
+        h('div', {class: 'pname', text: p.username + (isMe ? ' (you)' : '')}),
+        p.bio ? h('div', {class: 'pbio', text: p.bio}) : null,
+        h('div', {class: 'muted small', text: `${p.clipCount} clip${p.clipCount === 1 ? '' : 's'} posted · joined ${new Date(p.created_at).toLocaleDateString()}`}),
+        presenceLine(p))));
+  }
+}
+
+function render() {
+  const grid = $('#grid'); grid.replaceChildren();
+  const inChat = filter.kind === 'chat';
+  grid.hidden = inChat; $('#chat').hidden = !inChat;
+  $('#q').hidden = inChat;
+  if (inChat) { renderChat(); return; }
+  if (filter.kind === 'players') { renderPlayers(grid); return; }
+  let list = clips;
+  if (filter.kind === 'mine' && session) list = list.filter(c => c.user_id === session.user.id);
+  if (filter.kind === 'user') list = list.filter(c => c.user_id === filter.uid);
+  if (query) {
+    const q = query.toLowerCase();
+    list = list.filter(c => (c.title || '').toLowerCase().includes(q) || (c.caption || '').toLowerCase().includes(q) || ((c.profiles && c.profiles.username) || '').toLowerCase().includes(q));
+  }
+  if (!list.length) {
+    const m = !loaded ? ['Loading clips…', 'Fetching the latest plays.'] : query ? ['No matches', 'Try another search.']
+      : filter.kind === 'mine' ? ['You haven\'t posted yet', 'Hit "Upload clip" to share your first one.']
+      : ['No clips yet. Problem?', session ? 'Be the first: hit "Upload clip".' : 'Sign up and post the first one.'];
+    grid.append(h('div', {class: 'empty'}, h('img', {src: 'logo.png', alt: ''}), h('h2', {text: m[0]}), h('div', {text: m[1]})));
+    return;
+  }
+  for (const c of list) grid.append(clipCard(c));
+}
+function clipCard(c) {
+  const p = c.profiles || {};
+  const name = h('b', {text: p.username || 'Unknown player', title: 'Open profile', onclick: e => { e.stopPropagation(); openUser(c.user_id); }});
+  return h('article', {class: 'card', tabindex: '0', onclick: () => openClip(c), onkeydown: e => { if (e.key === 'Enter') openClip(c); }},
+    h('div', {class: 'thumb', style: c.thumb_path ? `background-image:url("${pub(c.thumb_path)}")` : ''}, h('span', {class: 'dur', text: fmtTime(c.duration)})),
+    h('div', {class: 'cbody'},
+      h('div', {class: 'ctrow'}, h('div', {class: 'ctitle', text: c.title || 'Untitled clip'}), notFromTFC(c) ? infoBadge() : null),
+      h('div', {class: 'byline'}, faceEl(c.user_id, p.face), name,
+        h('span', {text: '· ' + ago(c.created_at)}), h('span', {class: 'likes', text: '♥ ' + c.likeCount}))));
+}
+/* ---------- server storage ----------
+   Supabase free plan: 1 GB for files (clips, thumbnails, pictures, shared links) and
+   500 MB for the database. Exact numbers come from the server_storage() function. */
+const FILE_LIMIT = 1024 ** 3, DB_LIMIT = 500 * 1024 ** 2;
+const fmtBytes = b => b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(2) + ' GB' : b >= 1048576 ? Math.round(b / 1048576) + ' MB' : Math.round(b / 1024) + ' KB';
+async function loadStorage() {
+  if (!sb) return;
+  let files = null, count = null, db = null, approx = false;
+  const {data, error} = await sb.rpc('server_storage');
+  if (!error && data) { files = +data.files_bytes; count = +data.files_count; db = +data.db_bytes; }
+  else if (clips.length) { files = clips.reduce((n, c) => n + (+c.size || 0), 0); count = clips.length; approx = true; }   // before storage.sql is run
+  if (files == null) return;
+  const pct = Math.min(100, files / FILE_LIMIT * 100);
+  $('#storageBox').hidden = false;
+  $('#storageTxt').textContent = `${approx ? '≈ ' : ''}${fmtBytes(files)} of 1 GB used (${pct.toFixed(pct < 10 ? 1 : 0)}%)`;
+  const bar = $('#storageBar'); bar.style.width = pct + '%';
+  bar.className = pct >= 90 ? 'full' : pct >= 75 ? 'warn' : '';
+  $('#storageBox').title = approx ? '' : `${count} files · database ${fmtBytes(db)} of 500 MB`;   // details on hover only
+}
+
+/* ---------- chat ----------
+   One shared room. Messages arrive live through Supabase Realtime; if that's unavailable
+   the chat refreshes every 10 seconds while open. */
+const OWNER_ID = '765de669-6ade-4237-bb76-b181f1286cfb';
+let chat = [], chatLoaded = false, chatChannel = null, chatPoll = null, chatUnread = 0, chatError = '';
+const chatPeople = new Map();   // user_id -> {username, face}
+function updateChatBadge() {
+  const b = $('#chatBadge');
+  b.hidden = !chatUnread; b.textContent = chatUnread > 99 ? '99+' : String(chatUnread);
+}
+async function ensurePeople(ids) {
+  const missing = [...new Set(ids)].filter(id => !chatPeople.has(id));
+  if (!missing.length) return;
+  const {data} = await sb.from('profiles').select('*').in('id', missing);
+  (data || []).forEach(p => chatPeople.set(p.id, p));
+}
+async function loadChat() {
+  if (!sb || !session) return;
+  const {data, error} = await sb.from('messages').select('id,user_id,body,created_at').order('created_at', {ascending: false}).limit(150);
+  chatLoaded = true;
+  if (error) {
+    chatError = /Could not find the table|does not exist/i.test(error.message) ? 'Chat isn\'t set up on the server yet (run chat.sql in Supabase).' : 'Could not load chat: ' + error.message;
+    chat = [];
+  } else { chatError = ''; chat = data.reverse(); await Promise.all([loadAllPeople(), loadReactions(chat.map(m => m.id))]); await ensurePeople(chat.map(m => m.user_id)); }
+  if (filter.kind === 'chat') renderChat(true);
+}
+function startChatLive() {
+  startTyping();
+  if (!sb || !session || chatChannel) return;
+  chatChannel = sb.channel('chat-room')
+    .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'messages'}, async ({new: m}) => {
+      if (chat.some(x => x.id === m.id)) return;
+      await ensurePeople([m.user_id]);
+      const prev = chat[chat.length - 1];
+      chat.push(m); if (chat.length > 300) chat.shift();
+      typers.delete(m.user_id); renderTyping();   // their message arrived: no longer typing
+      if (filter.kind === 'chat') appendMsg(m, prev);
+      else if (m.user_id !== session.user.id) { chatUnread++; updateChatBadge(); }
+    })
+    .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'reactions'}, ({new: r}) => {
+      if (!r || !r.message_id) return;
+      const list = reactions.get(r.message_id) || [];
+      if (!list.some(x => x.user_id === r.user_id && x.emoji === r.emoji)) { list.push({user_id: r.user_id, emoji: r.emoji}); reactions.set(r.message_id, list); }
+      refreshReactionRow(r.message_id);
+    })
+    .on('postgres_changes', {event: 'DELETE', schema: 'public', table: 'reactions'}, ({old: r}) => {
+      if (!r || !r.message_id) return;
+      reactions.set(r.message_id, (reactions.get(r.message_id) || []).filter(x => !(x.user_id === r.user_id && x.emoji === r.emoji)));
+      refreshReactionRow(r.message_id);
+    })
+    .on('postgres_changes', {event: 'DELETE', schema: 'public', table: 'messages'}, ({old}) => {
+      chat = chat.filter(x => x.id !== old.id);
+      removeMsgRow(old.id);
+    })
+    .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'profiles'}, ({new: p}) => {
+      // someone read the chat (or changed their profile): refresh "Seen by"
+      const old = chatPeople.get(p.id);
+      chatPeople.set(p.id, {...(old || {}), ...p});
+      if (filter.kind === 'chat') updateReceipts();
+    })
+    .subscribe(status => {
+      // Fallback when live updates can't connect: refresh while the chat is open.
+      clearInterval(chatPoll);
+      if (status !== 'SUBSCRIBED') chatPoll = setInterval(() => { if (filter.kind === 'chat') loadChat(); }, 10000);
+    });
+}
+/* ---------- "… is typing" / "… is recording a voice message" ----------
+   Sent live over a Realtime broadcast channel (nothing is stored). Each signal lasts ~5 s,
+   and is repeated every 2.5 s while you keep typing or recording. */
+let typingChannel = null, typingTimer = null, lastTypingSent = 0, lastTypingState = 'idle';
+const typers = new Map();   // uid -> {state, until}
+function startTyping() {
+  if (!sb || !session || typingChannel) return;
+  typingChannel = sb.channel('chat-typing', {config: {broadcast: {self: false}}})
+    .on('broadcast', {event: 'typing'}, async ({payload}) => {
+      if (!payload || !payload.uid || (session && payload.uid === session.user.id)) return;
+      if (payload.state === 'idle') typers.delete(payload.uid);
+      else { typers.set(payload.uid, {state: payload.state, until: Date.now() + 5000}); await ensurePeople([payload.uid]); }
+      renderTyping();
+    })
+    .subscribe();
+  clearInterval(typingTimer);
+  typingTimer = setInterval(renderTyping, 1000);
+}
+function stopTyping() {
+  if (typingChannel) { sb.removeChannel(typingChannel); typingChannel = null; }
+  clearInterval(typingTimer); typers.clear(); renderTyping();
+}
+function sendTyping(state, force) {
+  if (!typingChannel || !session) return;
+  const now = Date.now();
+  if (!force && state === lastTypingState && now - lastTypingSent < 2500) return;
+  lastTypingSent = now; lastTypingState = state;
+  typingChannel.send({type: 'broadcast', event: 'typing', payload: {uid: session.user.id, state}});
+}
+function renderTyping() {
+  const el = $('#typingLine'); if (!el) return;
+  const now = Date.now(), rec = [], typ = [];
+  for (const [uid, t] of typers) {
+    if (t.until < now) { typers.delete(uid); continue; }
+    const n = (chatPeople.get(uid) || {}).username || 'Someone';
+    (t.state === 'recording' ? rec : typ).push(n);
+  }
+  const list = names => names.length === 1 ? [h('b', {text: names[0]})] : names.length === 2 ? [h('b', {text: names[0]}), ' and ', h('b', {text: names[1]})] : ['Several people'];
+  const parts = [];
+  if (rec.length) parts.push(h('span', {class: 'recd'}), ...list(rec), rec.length === 1 ? ' is recording a voice message' : ' are recording voice messages');
+  if (rec.length && typ.length) parts.push(' · ');
+  if (typ.length) parts.push(...list(typ), typ.length === 1 ? ' is typing' : ' are typing', h('span', {class: 'tdots'}, h('i'), h('i'), h('i')));
+  el.replaceChildren(...parts);
+  el.classList.toggle('on', parts.length > 0);
+}
+$('#chatInput').addEventListener('input', e => { if (e.target.value.trim()) sendTyping('typing'); else sendTyping('idle', true); });
+function stopChatLive() {
+  stopTyping();
+  if (chatChannel) { sb.removeChannel(chatChannel); chatChannel = null; }
+  clearInterval(chatPoll); chat = []; chatLoaded = false; chatUnread = 0; updateChatBadge();
+}
+function openChat() {
+  if (!session) { renderChat(); return; }
+  if (!chatLoaded) loadChat();
+  startChatLive();
+  refreshReaders();
+  markRead();
+  setTimeout(() => $('#chatInput').focus(), 50);
+}
+function linkify(text) {
+  const out = [], re = /(https?:\/\/[^\s<]+)/g;
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(...mentionNodes(text.slice(last, m.index)));
+    out.push(h('a', {href: m[1], target: '_blank', rel: 'noopener', text: m[1]}));
+    last = m.index + m[1].length;
+  }
+  if (last < text.length) out.push(...mentionNodes(text.slice(last)));
+  return out;
+}
+
+/* ---------- @mentions ----------
+   "@name" in a message is highlighted and opens that player's profile. Messages that
+   mention you get a highlight, and the app sends you a notification for them. Type @ in
+   the chat box for a list of players (↑ ↓ to pick, Enter or Tab to insert, Esc to close). */
+const MENTION_RE = /(^|[^A-Za-z0-9_.@-])@([A-Za-z0-9_.-]{3,20})/g;
+let peopleLoadedAt = 0;
+async function loadAllPeople(force) {
+  if (!force && Date.now() - peopleLoadedAt < 60000) return;
+  const {data} = await sb.from('profiles').select('*');
+  (data || []).forEach(p => chatPeople.set(p.id, {...(chatPeople.get(p.id) || {}), ...p}));
+  peopleLoadedAt = Date.now();
+}
+function knownPeople() {
+  const all = new Map();
+  for (const p of players) all.set(p.id, p);
+  for (const [id, p] of chatPeople) if (p && p.username) all.set(id, {...(all.get(id) || {}), ...p, id});
+  return all;
+}
+function personByName(name) {
+  const n = name.toLowerCase();
+  for (const p of knownPeople().values()) if ((p.username || '').toLowerCase() === n) return p;
+  return null;
+}
+// Finds the player an "@word" points to; a trailing . or - (end of a sentence) is ignored.
+function resolveMention(raw) {
+  let p = personByName(raw);
+  if (p) return {p, len: raw.length};
+  const t = raw.replace(/[.-]+$/, '');
+  if (t !== raw && t.length >= 3 && (p = personByName(t))) return {p, len: t.length};
+  return null;
+}
+function mentionNodes(text) {
+  const out = []; let last = 0;
+  for (const m of text.matchAll(MENTION_RE)) {
+    const r = resolveMention(m[2]); if (!r) continue;
+    const start = m.index + m[1].length;
+    if (start > last) out.push(document.createTextNode(text.slice(last, start)));
+    const isMe = session && r.p.id === session.user.id;
+    out.push(h('span', {class: 'mention' + (isMe ? ' mine' : ''), text: '@' + r.p.username, title: 'Open ' + r.p.username + '\'s profile', onclick: () => openUser(r.p.id)}));
+    last = start + 1 + r.len;
+  }
+  if (last < text.length) out.push(document.createTextNode(text.slice(last)));
+  return out;
+}
+function mentionsMe(body) {
+  if (!session || !body) return false;
+  for (const m of String(body).matchAll(MENTION_RE)) { const r = resolveMention(m[2]); if (r && r.p.id === session.user.id) return true; }
+  return false;
+}
+let mpop = {items: [], sel: 0, mq: null};
+function mentionQuery() {
+  const inp = $('#chatInput'), pos = inp.selectionStart || 0;
+  const m = /(^|[^A-Za-z0-9_.@-])@([A-Za-z0-9_.-]{0,20})$/.exec(inp.value.slice(0, pos));
+  return m ? {start: pos - m[2].length - 1, end: pos, q: m[2].toLowerCase()} : null;
+}
+function updateMentionPop() {
+  const mq = mentionQuery();
+  if (!mq || !session) { hideMentionPop(); return; }
+  const others = [...knownPeople().values()].filter(p => p.username && p.id !== session.user.id);
+  let list = others.filter(p => p.username.toLowerCase().startsWith(mq.q));
+  if (!list.length && mq.q) list = others.filter(p => p.username.toLowerCase().includes(mq.q));
+  list = list.sort((a, b) => a.username.localeCompare(b.username)).slice(0, 6);
+  if (!list.length) { hideMentionPop(); return; }
+  const sel = mpop.mq && mpop.mq.q === mq.q ? Math.min(mpop.sel, list.length - 1) : 0;
+  mpop = {items: list, sel, mq};
+  $('#mentionPop').replaceChildren(h('div', {class: 'mph', text: 'Mention a player'}),
+    ...list.map((p, i) => h('button', {type: 'button', role: 'option', class: i === sel ? 'sel' : '', 'aria-selected': i === sel,
+      onmousedown: e => { e.preventDefault(); pickMention(i); }}, faceEl(p.id, p.face), h('span', {text: p.username}))));
+  $('#mentionPop').hidden = false;
+}
+function hideMentionPop() { $('#mentionPop').hidden = true; mpop = {items: [], sel: 0, mq: null}; }
+function pickMention(i) {
+  const p = mpop.items[i], mq = mpop.mq; if (!p || !mq) return;
+  const inp = $('#chatInput'), ins = '@' + p.username + ' ';
+  inp.value = inp.value.slice(0, mq.start) + ins + inp.value.slice(mq.end).replace(/^ /, '');
+  const c = mq.start + ins.length;
+  hideMentionPop(); inp.focus(); inp.setSelectionRange(c, c);
+}
+$('#chatInput').addEventListener('input', updateMentionPop);
+$('#chatInput').addEventListener('click', updateMentionPop);
+$('#chatInput').addEventListener('blur', () => setTimeout(hideMentionPop, 120));
+$('#chatInput').addEventListener('keydown', e => {
+  if ($('#mentionPop').hidden) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    mpop.sel = (mpop.sel + (e.key === 'ArrowDown' ? 1 : -1) + mpop.items.length) % mpop.items.length;
+    updateMentionPop();
+  } else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickMention(mpop.sel); }
+  else if (e.key === 'Escape') { e.preventDefault(); hideMentionPop(); }
+});
+function mentionInChat(username) {
+  setFilter('chat');
+  setTimeout(() => {
+    const inp = $('#chatInput'); if (!inp || $('#chatForm').hidden) return;
+    const pre = inp.value && !/\s$/.test(inp.value) ? inp.value + ' ' : inp.value;
+    inp.value = pre + '@' + username + ' ';
+    inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+  }, 120);
+}
+
+/* ---------- profile pages ----------
+   Click a player anywhere (Players tab, a clip's name, a chat message, an @mention) to see
+   their picture, bio, when they were online, stats and all the clips they've posted. */
+async function openUser(uid) {
+  if (!uid || !sb) return;
+  const dlg = $('#userDlg');
+  if ($('#playDlg').open) closePlayer();
+  renderUser(uid, knownPeople().get(uid));
+  if (!dlg.open) dlg.showModal();
+  const {data} = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+  if (data) {
+    chatPeople.set(uid, {...(chatPeople.get(uid) || {}), ...data});
+    if (dlg.open && dlg.dataset.uid === uid) renderUser(uid, data);
+  }
+}
+function renderUser(uid, p) {
+  p = p || {username: 'Player', face: '😏'};
+  const dlg = $('#userDlg'); dlg.dataset.uid = uid;
+  const isMe = !!(session && uid === session.user.id), owner = uid === OWNER_ID;
+  const theirs = clips.filter(c => c.user_id === uid);
+  const likes = theirs.reduce((n, c) => n + (c.likeCount || 0), 0);
+  $('#uTitle').textContent = isMe ? 'Your profile' : p.username + '\'s profile';
+  const stat = (v, label) => h('div', {class: 'ustat'}, h('b', {text: String(v)}), h('span', {class: 'small muted', text: label}));
+  const joined = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'}) : '–';
+  const actions = h('div', {class: 'row'});
+  if (isMe) actions.append(h('button', {text: '✏ Edit profile', onclick: () => { dlg.close(); openProfile(); }}));
+  else if (session && me) actions.append(h('button', {class: 'primary', text: '@ Mention in chat', onclick: () => { dlg.close(); mentionInChat(p.username); }}));
+  const grid = h('div', {class: 'ugrid'});
+  if (!loaded) grid.append(h('div', {class: 'muted small', text: 'Loading clips…'}));
+  else if (!theirs.length) grid.append(h('div', {class: 'muted small', text: isMe ? 'You haven\'t posted any clips yet.' : 'No clips posted yet.'}));
+  theirs.forEach(c => grid.append(clipCard(c)));
+  $('#uBody').replaceChildren(...[
+    h('div', {class: 'uhead'}, faceEl(uid, p.face),
+      h('div', {class: 'pbody'},
+        h('div', {class: 'uname' + (owner ? ' owner' : ''), text: p.username + (owner ? ' 👑' : '') + (isMe ? ' (you)' : '')}),
+        p.bio ? h('div', {class: 'caption', text: p.bio}) : h('div', {class: 'muted small', text: 'No bio yet.'}),
+        presenceLine(p))),
+    h('div', {class: 'ustats'},
+      stat(theirs.length, theirs.length === 1 ? 'clip posted' : 'clips posted'),
+      stat(likes, likes === 1 ? 'like received' : 'likes received'),
+      stat(joined, 'joined')),
+    actions.childNodes.length ? actions : null,
+    h('div', {class: 'small muted', text: 'Clips'}), grid].filter(Boolean));
+}
+$('#uClose').onclick = () => $('#userDlg').close();
+function renderChat(scrollDown) {
+  const list = $('#chatList');
+  const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+  list.replaceChildren();
+  const signedIn = !!(session && me);
+  $('#chatForm').hidden = !signedIn;
+  if (!session) { list.append(h('div', {class: 'chat-empty', text: 'Sign in to read and join the chat.'})); return; }
+  if (!chatLoaded) { list.append(h('div', {class: 'chat-empty', text: 'Loading chat…'})); return; }
+  if (chatError) { list.append(h('div', {class: 'chat-empty', text: chatError})); return; }
+  if (!chat.length) { list.append(h('div', {class: 'chat-empty', text: 'No messages yet. Say hi 👋'})); return; }
+  let prev = null;
+  for (const m of chat) { list.append(msgRow(m, prev)); prev = m; }
+  updateReceipts();
+  if (scrollDown || nearBottom) list.scrollTop = list.scrollHeight;
+  markRead();
+}
+// Voice messages are stored as a short audio file; the chat message just points to it:
+// "[voice] <file path> <seconds>". Older app versions show that line as text.
+const VOICE_RE = /^\[voice\] (\S+) (\d+(?:\.\d+)?)$/;
+function msgRow(m, prev) {
+  const p = chatPeople.get(m.user_id) || {username: 'Unknown player', face: '😶'};
+  const cont = prev && prev.user_id === m.user_id && new Date(m.created_at) - new Date(prev.created_at) < 5 * 60000;
+  const canDel = session && (m.user_id === session.user.id || session.user.id === OWNER_ID);
+  const v = VOICE_RE.exec(m.body || ''), im = IMG_RE.exec(m.body || '');
+  const content = v ? voicePlayer(v[1], +v[2]) : im ? chatImage(im, p) : h('div', {class: 'mtext'}, linkify(m.body));
+  const mentioned = !v && !im && session && m.user_id !== session.user.id && mentionsMe(m.body);
+  const face = faceEl(m.user_id, p.face); face.title = 'Open profile'; face.onclick = () => openUser(m.user_id);
+  return h('div', {class: 'msg' + (cont ? ' cont' : '') + (mentioned ? ' mentioned' : ''), 'data-id': m.id},
+    face,
+    h('div', {class: 'mbody'},
+      h('div', {class: 'mhead'},
+        h('span', {class: 'mname' + (m.user_id === OWNER_ID ? ' owner' : ''), title: 'Open profile', onclick: () => openUser(m.user_id), text: p.username + (m.user_id === OWNER_ID ? ' 👑' : '')}),
+        h('span', {class: 'small muted', text: new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})})),
+      content,
+      reactionRow(m.id)),
+    h('div', {class: 'mtools'},
+      reactionsReady ? h('button', {class: 'mreact', title: 'Add reaction', 'aria-label': 'Add reaction', text: '😀', onclick: e => { e.stopPropagation(); openReactPicker(m.id, e.currentTarget); }}) : null,
+      canDel ? h('button', {class: 'mdel danger', title: 'Delete message', text: '✕', onclick: () => deleteMsg(m)}) : null));
+}
+
+/* ---------- reactions ----------
+   Hover a message → 😀 → pick an emoji. Reactions show under the message with a count;
+   click one to add/remove yours. Hover a reaction to see who reacted. Needs reactions.sql. */
+const REACT_EMOJIS = ['😂', '💀', '🔥', '👍', '❤️', '😭', '😮', '👀', '💯', '🗿', '🤡', '😡'];
+let reactionsReady = true;            // false when the server doesn't have the reactions table yet
+const reactions = new Map();          // message id -> [{user_id, emoji}]
+async function loadReactions(ids) {
+  if (!ids.length) return;
+  const {data, error} = await sb.from('reactions').select('message_id,user_id,emoji').in('message_id', ids);
+  if (error) { if (/does not exist|Could not find the table/i.test(error.message)) reactionsReady = false; return; }
+  ids.forEach(id => reactions.set(id, []));
+  (data || []).forEach(r => reactions.get(r.message_id).push({user_id: r.user_id, emoji: r.emoji}));
+}
+function reactionRow(mid) {
+  const list = reactions.get(mid) || [];
+  const row = h('div', {class: 'rxns', 'data-rx': mid});
+  const groups = new Map();
+  for (const r of list) { if (!groups.has(r.emoji)) groups.set(r.emoji, []); groups.get(r.emoji).push(r.user_id); }
+  for (const [emoji, users] of groups) {
+    const mine = session && users.includes(session.user.id);
+    const names = users.map(u => (chatPeople.get(u) || {}).username || 'Someone');
+    row.append(h('button', {class: 'rx' + (mine ? ' mine' : ''), title: names.join(', ') + ' reacted with ' + emoji,
+      onclick: () => toggleReaction(mid, emoji)}, h('span', {text: emoji}), h('b', {text: String(users.length)})));
+  }
+  if (groups.size && reactionsReady) row.append(h('button', {class: 'rx add', title: 'Add reaction', text: '+', onclick: e => { e.stopPropagation(); openReactPicker(mid, e.currentTarget); }}));
+  return row;
+}
+function refreshReactionRow(mid) {
+  const old = document.querySelector(`.rxns[data-rx="${mid}"]`);
+  if (old) old.replaceWith(reactionRow(mid));
+}
+async function toggleReaction(mid, emoji) {
+  if (!session || !me) { toast('Sign in to react.', true); return; }
+  const list = reactions.get(mid) || [];
+  const uid = session.user.id, had = list.some(r => r.user_id === uid && r.emoji === emoji);
+  // Show it right away; undo if the server says no.
+  reactions.set(mid, had ? list.filter(r => !(r.user_id === uid && r.emoji === emoji)) : [...list, {user_id: uid, emoji}]);
+  refreshReactionRow(mid);
+  const r = had ? await sb.from('reactions').delete().eq('message_id', mid).eq('user_id', uid).eq('emoji', emoji)
+                : await sb.from('reactions').insert({message_id: mid, user_id: uid, emoji});
+  if (r.error && !/duplicate/i.test(r.error.message)) {
+    reactions.set(mid, list); refreshReactionRow(mid);
+    toast('Could not react: ' + r.error.message, true);
+  }
+}
+/* Your most used emojis (counted on this PC) come first everywhere. */
+function emojiUse() { try { return JSON.parse(localStorage.getItem('tfc-emoji-use') || '{}'); } catch { return {}; } }
+function countEmoji(e) { const u = emojiUse(); u[e] = (u[e] || 0) + 1; try { localStorage.setItem('tfc-emoji-use', JSON.stringify(u)); } catch {} }
+function mostUsed(n) {
+  const u = emojiUse();
+  const top = Object.keys(u).sort((a, b) => u[b] - u[a]);
+  for (const e of REACT_EMOJIS) if (!top.includes(e)) top.push(e);   // fill up with the defaults
+  return top.slice(0, n);
+}
+function pickEmoji(mid, e) { closeReactPicker(); countEmoji(e); toggleReaction(mid, e); }
+function placePopup(pop, anchor) {
+  document.body.append(pop);
+  const a = anchor.getBoundingClientRect(), w = pop.offsetWidth, ph = pop.offsetHeight;
+  pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, a.right - w)) + 'px';
+  pop.style.top = (a.top - ph - 6 > 8 ? a.top - ph - 6 : Math.min(innerHeight - ph - 8, a.bottom + 6)) + 'px';
+}
+// Quick row: your 6 most used + a "+" that opens every emoji.
+function openReactPicker(mid, anchor) {
+  closeReactPicker();
+  const pop = h('div', {class: 'rpick', id: 'reactPicker', role: 'menu'},
+    ...mostUsed(6).map(e => h('button', {type: 'button', text: e, title: 'React with ' + e, onclick: () => pickEmoji(mid, e)})),
+    h('button', {type: 'button', class: 'rmore', title: 'All emojis', 'aria-label': 'All emojis', text: '+', onclick: e => { e.stopPropagation(); openEmojiPanel(mid, anchor); }}));
+  placePopup(pop, anchor);
+}
+// The big one: Most used, Castiel's special, then every emoji by category.
+function openEmojiPanel(mid, anchor) {
+  closeReactPicker();
+  const section = (title, list, cls) => [h('div', {class: 'eph' + (cls ? ' ' + cls : ''), text: title}),
+    h('div', {class: 'epg'}, ...list.map(e => h('button', {type: 'button', text: e, title: e, onclick: () => pickEmoji(mid, e)})))];
+  const body = h('div', {class: 'epbody'},
+    ...section('Most used', mostUsed(16)),
+    ...section('💕 Castiel\'s special', ['🏩'], 'special'),
+    ...EMOJI_CATS.flatMap(([name, str]) => section(name, splitEmojis(str))));
+  const pop = h('div', {class: 'rpick epanel', id: 'reactPicker', role: 'dialog', 'aria-label': 'Pick an emoji'}, body);
+  placePopup(pop, anchor);
+}
+const splitEmojis = s => [...new Intl.Segmenter('en', {granularity: 'grapheme'}).segment(s.replace(/\s+/g, ''))].map(x => x.segment);
+const EMOJI_CATS = [
+  ['Smileys', '😀😃😄😁😆😅🤣😂🙂🙃🫠😉😊😇🥰😍🤩😘😗😚😙🥲😋😛😜🤪😝🤑🤗🤭🫢🫣🤫🤔🫡🤐🤨😐😑😶🫥😶‍🌫️😏😒🙄😬😮‍💨🤥😌😔😪🤤😴😷🤒🤕🤢🤮🤧🥵🥶🥴😵😵‍💫🤯🤠🥳🥸😎🤓🧐😕🫤😟🙁😮😯😲😳🥺🥹😦😧😨😰😥😢😭😱😖😣😞😓😩😫🥱😤😡😠🤬😈👿💀☠️💩🤡👹👺👻👽👾🤖😺😸😹😻😼😽🙀😿😾🙈🙉🙊'],
+  ['Hearts & feelings', '💋💌💘💝💖💗💓💞💕💟❣️💔❤️‍🔥❤️‍🩹❤️🩷🧡💛💚💙🩵💜🤎🖤🩶🤍💯💢💥💫💦💨🕳️💬👁️‍🗨️🗨️🗯️💭💤'],
+  ['People & hands', '👋🤚🖐️✋🖖🫱🫲🫳🫴👌🤌🤏✌️🤞🫰🤟🤘🤙👈👉👆🖕👇☝️🫵👍👎✊👊🤛🤜👏🙌🫶👐🤲🤝🙏✍️💅🤳💪🦾🦵🦶👂🦻👃🧠🫀🫁🦷🦴👀👁️👅👄🫦👶🧒👦👧🧑👱👨🧔👩🧓👴👵🙍🙎🙅🙆💁🙋🧏🙇🤦🤷👮🕵️💂🥷👷🫅🤴👸👳👲🧕🤵👰🤰🫄🤱👼🎅🤶🦸🦹🧙🧚🧛🧜🧝🧞🧟🧌💆💇🚶🧍🧎🏃💃🕺🕴️👯🧖🧗🤺🏇⛷️🏂🏌️🏄🚣🏊⛹️🏋️🚴🚵🤸🤼🤽🤾🤹🧘🛀🛌👭👫👬💏💑👪🗣️👤👥🫂'],
+  ['Animals & nature', '🐵🐒🦍🦧🐶🐕🦮🐕‍🦺🐩🐺🦊🦝🐱🐈🐈‍⬛🦁🐯🐅🐆🐴🫎🫏🐎🦄🦓🦌🦬🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🦙🦒🐘🦣🦏🦛🐭🐁🐀🐹🐰🐇🐿️🦫🦔🦇🐻🐻‍❄️🐨🐼🦥🦦🦨🦘🦡🐾🦃🐔🐓🐣🐤🐥🐦🐧🕊️🦅🦆🦢🦉🦤🪶🦩🦚🦜🪽🐦‍⬛🪿🐸🐊🐢🦎🐍🐲🐉🦕🦖🐳🐋🐬🦭🐟🐠🐡🦈🐙🐚🪸🪼🐌🦋🐛🐜🐝🪲🐞🦗🪳🕷️🕸️🦂🦟🪰🪱🦠💐🌸💮🪷🏵️🌹🥀🌺🌻🌼🌷🪻🌱🪴🌲🌳🌴🌵🌾🌿☘️🍀🍁🍂🍃🪹🪺🍄🌍🌎🌏🌑🌒🌓🌔🌕🌙🌚🌛🌜☀️🌝🌞🪐⭐🌟🌠🌌☁️⛅⛈️🌤️🌥️🌦️🌧️🌨️🌩️🌪️🌫️🌬️🌀🌈🌂☂️☔⚡❄️☃️⛄☄️🔥💧🌊'],
+  ['Food & drink', '🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥🥑🍆🥔🥕🌽🌶️🫑🥒🥬🥦🧄🧅🥜🫘🌰🫚🫛🍞🥐🥖🫓🥨🥯🥞🧇🧀🍖🍗🥩🥓🍔🍟🍕🌭🥪🌮🌯🫔🥙🧆🥚🍳🥘🍲🫕🥣🥗🍿🧈🧂🥫🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🥮🍡🥟🥠🥡🦀🦞🦐🦑🦪🍦🍧🍨🍩🍪🎂🍰🧁🥧🍫🍬🍭🍮🍯🍼🥛☕🫖🍵🍶🍾🍷🍸🍹🍺🍻🥂🥃🫗🥤🧋🧃🧉🧊🥢🍽️🍴🥄🔪🫙🏺'],
+  ['Activities & games', '🎃🎄🎆🎇🧨✨🎈🎉🎊🎋🎍🎎🎏🎐🎑🧧🎀🎁🎗️🎟️🎫🎖️🏆🏅🥇🥈🥉⚽⚾🥎🏀🏐🏈🏉🎾🥏🎳🏏🏑🏒🥍🏓🏸🥊🥋🥅⛳⛸️🎣🤿🎽🎿🛷🥌🎯🪀🪁🔫🎱🔮🪄🎮🕹️🎰🎲🧩🧸🪅🪩🪆♠️♥️♦️♣️♟️🃏🀄🎴🎭🖼️🎨🧵🪡🧶🪢🎤🎧🎷🪗🎸🎹🎺🎻🪕🥁🪘🪇🪈📯🎵🎶🎼🎙️📻🎬📽️📺📷📸📹🎥'],
+  ['Travel & places', '🌋🗻🏔️⛰️🏕️🏖️🏜️🏝️🏞️🏟️🏛️🏗️🧱🪨🪵🛖🏘️🏚️🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪🕌🛕🕍⛩️🕋⛲⛺🌁🌃🏙️🌄🌅🌆🌇🌉♨️🎠🛝🎡🎢💈🎪🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚐🚑🚒🚓🚔🚕🚖🚗🚘🚙🛻🚚🚛🚜🏎️🏍️🛵🦽🦼🛺🚲🛴🛹🛼🚏🛣️🛤️⛽🛞🚨🚥🚦🛑🚧⚓🛟⛵🛶🚤🛳️⛴️🛥️🚢✈️🛩️🛫🛬🪂💺🚁🚟🚠🚡🛰️🚀🛸🗺️🧭⌛⏳⌚⏰⏱️⏲️🕰️'],
+  ['Objects', '👓🕶️🥽🥼🦺👔👕👖🧣🧤🧥🧦👗👘🥻🩱🩲🩳👙👚🪭👛👜👝🛍️🎒🩴👞👟🥾🥿👠👡🩰👢🪮👑👒🎩🎓🧢🪖⛑️📿💄💍💎🔇🔈🔉🔊📢📣🔔🔕📱📲☎️📞📟📠🔋🪫🔌💻🖥️🖨️⌨️🖱️🖲️💽💾💿📀🧮🎞️📡🔦🏮🪔📔📕📖📗📘📙📚📓📒📃📜📄📰🗞️📑🔖🏷️💰🪙💴💵💶💷💸💳🧾✉️📧📨📩📤📥📦📫📪📬📭📮🗳️✏️✒️🖋️🖊️🖌️🖍️📝💼📁📂🗂️📅📆📇📈📉📊📋📌📍📎🖇️📏📐✂️🗃️🗄️🗑️🔒🔓🔏🔐🔑🗝️🔨🪓⛏️⚒️🛠️🗡️⚔️💣🪃🏹🛡️🪚🔧🪛🔩⚙️🗜️⚖️🦯🔗⛓️🪝🧰🧲🪜⚗️🧪🧫🧬🔬🔭📡💉🩸💊🩹🩼🩺🩻🚪🛗🪞🪟🛏️🛋️🪑🚽🪠🚿🛁🪤🪒🧴🧷🧹🧺🧻🪣🧼🫧🪥🧽🧯🛒🚬⚰️🪦⚱️🧿🪬🗿🪧🪪'],
+  ['Symbols', '🏧🚮🚰♿🚹🚺🚻🚼🚾🛂🛃🛄🛅⚠️🚸⛔🚫🚳🚭🚯🚱🚷📵🔞☢️☣️⬆️↗️➡️↘️⬇️↙️⬅️↖️↕️↔️↩️↪️⤴️⤵️🔃🔄🔙🔚🔛🔜🔝🛐⚛️🕉️✡️☸️☯️✝️☦️☪️☮️🕎🔯🪯♈♉♊♋♌♍♎♏♐♑♒♓⛎🔀🔁🔂▶️⏩⏭️⏯️◀️⏪⏮️🔼⏫🔽⏬⏸️⏹️⏺️⏏️🎦🔅🔆📶🛜📳📴♀️♂️⚧️✖️➕➖➗🟰♾️‼️⁉️❓❔❕❗〰️💱💲⚕️♻️⚜️🔱📛🔰⭕✅☑️✔️❌❎➰➿〽️✳️✴️❇️©️®️™️🔟🔠🔡🔢🔣🔤🅰️🆎🅱️🆑🆒🆓ℹ️🆔Ⓜ️🆕🆖🅾️🆗🅿️🆘🆙🆚🈁🔴🟠🟡🟢🔵🟣🟤⚫⚪🟥🟧🟨🟩🟦🟪🟫⬛⬜◼️◻️◾◽▪️▫️🔶🔷🔸🔹🔺🔻💠🔘🔳🔲'],
+  ['Flags', '🏁🚩🎌🏴🏳️🏳️‍🌈🏳️‍⚧️🏴‍☠️🇩🇪🇦🇹🇨🇭🇺🇸🇬🇧🇫🇷🇪🇸🇮🇹🇳🇱🇵🇱🇹🇷🇺🇦🇷🇺🇯🇵🇰🇷🇨🇳🇧🇷🇲🇽🇨🇦🇦🇺🇮🇳🇪🇺'],
+];
+function closeReactPicker() { const p = document.getElementById('reactPicker'); if (p) p.remove(); }
+document.addEventListener('click', e => { if (!e.target.closest('#reactPicker')) closeReactPicker(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReactPicker(); });
+document.addEventListener('scroll', e => { if (!(e.target.closest && e.target.closest('#reactPicker'))) closeReactPicker(); }, true);
+/* Custom voice player: play/pause, a waveform of the real recording that fills in as it
+   plays (click to jump), and the time. Only one voice message plays at a time. */
+const ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 16 16"><rect x="3" y="2.5" width="3.5" height="11" rx="1" fill="currentColor"/><rect x="9.5" y="2.5" width="3.5" height="11" rx="1" fill="currentColor"/></svg>';
+const ICON_VOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+const ICON_VOL_LOW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6"/></svg>';
+const ICON_MUTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor"/><path d="m16 9.5 5 5"/><path d="m21 9.5-5 5"/></svg>';
+let voiceVolume = 1, voiceMuted = false;
+try { const s = JSON.parse(localStorage.getItem('tfc-voice-vol') || 'null'); if (s) { voiceVolume = +s.v; voiceMuted = !!s.m; } } catch {}
+const waveCache = new Map();   // path -> Promise<number[]> (bar heights 0..1)
+let playingVoice = null;
+function voicePeaks(path) {
+  if (!waveCache.has(path)) waveCache.set(path, (async () => {
+    try {
+      const buf = await (await fetch(pub(path))).arrayBuffer();
+      const ctx = new OfflineAudioContext(1, 1, 44100);
+      const audio = await ctx.decodeAudioData(buf);
+      const data = audio.getChannelData(0), bars = 36, step = Math.floor(data.length / bars) || 1, out = [];
+      for (let i = 0; i < bars; i++) {
+        let peak = 0;
+        for (let j = i * step; j < Math.min(data.length, (i + 1) * step); j += 16) peak = Math.max(peak, Math.abs(data[j]));
+        out.push(peak);
+      }
+      const max = Math.max(0.05, ...out);
+      return out.map(x => Math.max(0.12, x / max));
+    } catch { return Array.from({length: 36}, (_, i) => 0.3 + 0.25 * Math.abs(Math.sin(i * 1.7))); }
+  })());
+  return waveCache.get(path);
+}
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// A burst of glowing sparks flying out of the play button. Completely unnecessary.
+function sparkBurst(player, from, n) {
+  if (REDUCED) return;
+  const pr = player.getBoundingClientRect(), br = from.getBoundingClientRect();
+  const cx = br.left - pr.left + br.width / 2, cy = br.top - pr.top + br.height / 2;
+  const colors = ['#d7ff3a', '#d7ff3a', '#ffffff', '#3ddc97', '#f6ff9e'];
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n + Math.random() * 0.5, d = 26 + Math.random() * 34;
+    const s = document.createElement('span');
+    s.className = 'vspark';
+    s.style.cssText = `left:${cx}px;top:${cy}px;--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;--c:${colors[i % colors.length]};--t:${(0.55 + Math.random() * 0.4).toFixed(2)}s;width:${3 + Math.random() * 5}px;height:${3 + Math.random() * 5}px`;
+    player.append(s);
+    setTimeout(() => s.remove(), 1100);
+  }
+}
+function voicePlayer(path, secs) {
+  const audio = new Audio(); audio.preload = 'none'; audio.src = pub(path);
+  const btn = h('button', {class: 'vplay', title: 'Play'}); btn.innerHTML = ICON_PLAY;
+  const canvas = h('canvas', {class: 'vwave', width: '360', height: '60', title: 'Click or drag to jump'});
+  const time = h('span', {class: 'vtime', text: fmtTime(secs)});
+  let peaks = null;
+  let scrub = null;   // while dragging on the waveform: {frac, wasPlaying}
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#d7ff3a';
+  const draw = () => {
+    const c = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+    c.clearRect(0, 0, W, H);
+    const bars = peaks || Array(36).fill(0.15), bw = W / bars.length;
+    const prog = scrub ? scrub.frac : audio.duration && isFinite(audio.duration) ? audio.currentTime / audio.duration : (audio.currentTime / secs || 0);
+    const live = !audio.paused && !REDUCED, t = performance.now() / 1000, head = prog * bars.length;
+    bars.forEach((p, i) => {
+      const played = (i + 0.5) / bars.length <= prog;
+      // bars near the playhead bounce while playing (unnecessary)
+      const near = live ? Math.max(0, 1 - Math.abs(i - head) / 4) : 0;
+      const bounce = near * (0.25 + 0.25 * Math.sin(t * 18 + i));
+      const bh = Math.max(4, Math.min(1, p + bounce) * (H - 6));
+      c.shadowBlur = played && live ? 10 : 0; c.shadowColor = accent;
+      c.fillStyle = played ? accent : near > 0.5 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.28)';
+      const x = i * bw + bw * 0.2, w = bw * 0.6, y = (H - bh) / 2, r = Math.min(w / 2, 3);
+      c.beginPath(); c.roundRect ? c.roundRect(x, y, w, bh, r) : c.rect(x, y, w, bh); c.fill();
+    });
+    c.shadowBlur = 0;
+  };
+  voicePeaks(path).then(p => { peaks = p; draw(); });
+  draw();
+  let raf = null;
+  const tick = () => { draw(); if (!scrub) time.textContent = fmtTime(audio.currentTime) + ' / ' + fmtTime(secs); if (!audio.paused) raf = requestAnimationFrame(tick); };
+  audio.onplay = () => { btn.innerHTML = ICON_PAUSE; btn.title = 'Pause'; el.classList.add('playing'); sparkBurst(el, btn, 16); tick(); };
+  audio.onpause = () => { btn.innerHTML = ICON_PLAY; btn.title = 'Play'; el.classList.remove('playing'); cancelAnimationFrame(raf); draw(); };
+  audio.onended = () => { audio.currentTime = 0; time.textContent = fmtTime(secs); el.classList.remove('playing'); sparkBurst(el, btn, 10); draw(); };
+  btn.onclick = () => {
+    if (audio.paused) { if (playingVoice && playingVoice !== audio) playingVoice.pause(); playingVoice = audio; audio.play().catch(() => toast('Could not play this voice message.', true)); }
+    else audio.pause();
+  };
+  // Scrubbing: press and hold on the waveform, drag to the spot, let go to play from there.
+  // (A plain click works too.) While dragging only the picture moves; the jump happens on release.
+  const dur = () => audio.duration && isFinite(audio.duration) ? audio.duration : secs;
+  const fracAt = e => { const r = canvas.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+  canvas.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    scrub = {frac: fracAt(e), wasPlaying: !audio.paused};
+    canvas.classList.add('scrubbing');
+    draw(); time.textContent = fmtTime(scrub.frac * dur()) + ' / ' + fmtTime(secs);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!scrub) return;
+    scrub.frac = fracAt(e);
+    draw(); time.textContent = fmtTime(scrub.frac * dur()) + ' / ' + fmtTime(secs);
+  });
+  const endScrub = e => {
+    if (!scrub) return;
+    const f = scrub.frac; scrub = null;
+    canvas.classList.remove('scrubbing');
+    try { canvas.releasePointerCapture(e.pointerId); } catch {}
+    audio.currentTime = f * dur();
+    if (audio.paused) btn.click(); else draw();
+  };
+  canvas.addEventListener('pointerup', endScrub);
+  canvas.addEventListener('pointercancel', e => { scrub = null; canvas.classList.remove('scrubbing'); draw(); });
+  // Volume: speaker button (mute/unmute) + slider. One volume for all voice messages, remembered.
+  audio.volume = voiceVolume; audio.muted = voiceMuted;
+  const vbtn = h('button', {class: 'vvolbtn', title: 'Mute'});
+  const slider = h('input', {type: 'range', class: 'vvol', min: '0', max: '1', step: '0.05', 'aria-label': 'Volume'});
+  slider.value = String(voiceMuted ? 0 : voiceVolume);
+  const paintVol = () => { const v = audio.muted ? 0 : audio.volume; vbtn.innerHTML = v === 0 ? ICON_MUTE : v < 0.5 ? ICON_VOL_LOW : ICON_VOL; vbtn.title = v === 0 ? 'Unmute' : 'Mute'; slider.style.setProperty('--v', (v * 100) + '%'); };
+  slider.oninput = () => {
+    voiceVolume = +slider.value; voiceMuted = voiceVolume === 0;
+    audio.volume = voiceVolume || 0; audio.muted = voiceMuted;
+    try { localStorage.setItem('tfc-voice-vol', JSON.stringify({v: voiceVolume, m: voiceMuted})); } catch {}
+    paintVol();
+  };
+  vbtn.onclick = () => {
+    voiceMuted = !(audio.muted || audio.volume === 0) ;
+    if (!voiceMuted && voiceVolume === 0) voiceVolume = 0.8;
+    audio.muted = voiceMuted; audio.volume = voiceVolume;
+    slider.value = String(voiceMuted ? 0 : voiceVolume);
+    try { localStorage.setItem('tfc-voice-vol', JSON.stringify({v: voiceVolume, m: voiceMuted})); } catch {}
+    paintVol();
+  };
+  audio.addEventListener('play', () => { audio.volume = voiceVolume; audio.muted = voiceMuted; slider.value = String(voiceMuted ? 0 : voiceVolume); paintVol(); });
+  paintVol();
+  // The volume controls only show while this voice message is playing.
+  const wrap = h('div', {class: 'vvolwrap', 'aria-hidden': 'true'}, vbtn, slider);
+  const showVol = on => { wrap.classList.toggle('open', on); wrap.setAttribute('aria-hidden', on ? 'false' : 'true'); vbtn.tabIndex = slider.tabIndex = on ? 0 : -1; };
+  showVol(false);
+  audio.addEventListener('play', () => showVol(true));
+  audio.addEventListener('pause', () => showVol(false));
+  audio.addEventListener('ended', () => showVol(false));
+  const el = h('div', {class: 'vplayer'}, btn, canvas, time, wrap);
+  el._audio = audio;
+  return el;
+}
+/* ---------- read receipts ----------
+   Each player's profile keeps chat_read_at (up to when they've read the chat). Under the
+   last message of each run of your own messages: "✓ Seen by Castiel" or "✓ Sent". */
+async function refreshReaders() {
+  const {data} = await sb.from('profiles').select('*');
+  (data || []).forEach(p => chatPeople.set(p.id, {...(chatPeople.get(p.id) || {}), ...p}));
+  if (filter.kind === 'chat') updateReceipts();
+}
+function seenBy(m) {
+  const t = new Date(m.created_at).getTime(), names = [];
+  for (const [id, p] of chatPeople) {
+    if (id === m.user_id || !p.chat_read_at) continue;
+    if (new Date(p.chat_read_at).getTime() >= t) names.push(p.username || 'Someone');
+  }
+  return names;
+}
+function updateReceipts() {
+  document.querySelectorAll('#chatList .seen').forEach(e => e.remove());
+  if (!session) return;
+  const me_ = session.user.id;
+  for (let i = 0; i < chat.length; i++) {
+    const m = chat[i], next = chat[i + 1];
+    if (m.user_id !== me_ || (next && next.user_id === me_)) continue;   // only the last of each run of yours
+    const row = document.querySelector(`.msg[data-id="${m.id}"] .mbody`);
+    if (!row) continue;
+    const names = seenBy(m);
+    const text = names.length ? '✓ Seen by ' + (names.length > 3 ? names.slice(0, 3).join(', ') + ` +${names.length - 3}` : names.join(', ')) : '✓ Sent';
+    row.append(h('div', {class: 'seen' + (names.length ? ' yes' : ''), text, title: names.join(', ')}));
+  }
+}
+// Mark the chat as read while you're actually looking at it.
+let lastReadSent = 0, readTimer = null;
+function chatVisible() {
+  return filter.kind === 'chat' && document.visibilityState === 'visible' && !(window.frameElement && window.frameElement.hidden) && document.hasFocus();
+}
+function markRead() {
+  clearTimeout(readTimer);
+  readTimer = setTimeout(async () => {
+    if (!session || !chatVisible() || !chat.length) return;
+    const latest = new Date(chat[chat.length - 1].created_at).getTime();
+    if (latest <= lastReadSent) return;
+    lastReadSent = latest;
+    try { await sb.from('profiles').update({chat_read_at: new Date(latest).toISOString()}).eq('id', session.user.id); } catch {}
+  }, 1200);
+}
+window.addEventListener('focus', markRead);
+document.addEventListener('visibilitychange', markRead);
+// Add one message at the bottom without redrawing the rest (so playing voice messages keep playing).
+function appendMsg(m, prev) {
+  const list = $('#chatList');
+  if (!list.querySelector('.msg')) { renderChat(true); return; }
+  const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+  list.append(msgRow(m, prev));
+  updateReceipts();
+  if (nearBottom || (session && m.user_id === session.user.id)) list.scrollTop = list.scrollHeight;
+  markRead();
+}
+function removeMsgRow(id) {
+  const el = document.querySelector(`.msg[data-id="${id}"]`);
+  if (el) el.remove();
+  if (filter.kind === 'chat' && !chat.length) renderChat(); else updateReceipts();
+}
+async function deleteMsg(m) {
+  const {error} = await sb.from('messages').delete().eq('id', m.id);
+  if (error) { toast('Could not delete: ' + error.message, true); return; }
+  const v = VOICE_RE.exec(m.body || '') || IMG_RE.exec(m.body || '');
+  if (v && m.user_id === session.user.id) sb.storage.from(BUCKET).remove([v[1]]);   // free the audio/picture file too
+  chat = chat.filter(x => x.id !== m.id); removeMsgRow(m.id);
+}
+
+/* ---------- voice messages: click the mic to record, then Send (or ✕ to cancel) ---------- */
+const ICON_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5 10.5a7 7 0 0 0 14 0"/><path d="M12 17.5V21"/><path d="M8.5 21h7"/></svg>';
+const ICON_SEND = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.1 15 12 3.4 13.9z"/></svg>';
+function setMicIdle() { const b = $('#micBtn'); b.classList.remove('on'); b.innerHTML = ICON_MIC; b.title = 'Record a voice message (up to 60 seconds)'; }
+function setMicSend() { const b = $('#micBtn'); b.classList.add('on'); b.innerHTML = ICON_SEND + '<span>Send</span>'; b.title = 'Send voice message'; }
+setMicIdle();
+let voiceRec = null, voiceChunks = [], voiceStart = 0, voiceTimer = null, voiceStream = null, voiceCancel = false;
+const VOICE_MAX = 60;
+async function startVoice() {
+  if (!session || voiceRec) return;
+  try { voiceStream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true}}); }
+  catch { $('#chatMsg').textContent = 'No microphone found, or it\'s blocked.'; return; }
+  const type = ['audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  voiceRec = new MediaRecorder(voiceStream, {mimeType: type || undefined, audioBitsPerSecond: 48000});
+  voiceChunks = []; voiceCancel = false;
+  voiceRec.ondataavailable = e => e.data.size && voiceChunks.push(e.data);
+  voiceRec.onstop = finishVoice;
+  voiceRec.start(250);
+  voiceStart = Date.now();
+  $('#chatInput').hidden = true; $('#imgBtn').hidden = true; $('#recBar').hidden = false; $('#recCancel').hidden = false; $('#chatSend').hidden = true;
+  setMicSend();
+  $('#recTime').textContent = '0:00';
+  voiceTimer = setInterval(() => {
+    const s = (Date.now() - voiceStart) / 1000;
+    $('#recTime').textContent = fmtTime(s);
+    sendTyping('recording');   // others see "… is recording a voice message"
+    if (s >= VOICE_MAX) stopVoice(false);   // 60 s limit: send automatically
+  }, 250);
+}
+function stopVoice(cancel) {
+  if (!voiceRec) return;
+  voiceCancel = cancel;
+  clearInterval(voiceTimer);
+  try { voiceRec.stop(); } catch {}
+}
+function resetVoiceUI() {
+  sendTyping('idle', true);
+  if (voiceStream) voiceStream.getTracks().forEach(t => t.stop());
+  voiceRec = null; voiceStream = null;
+  $('#chatInput').hidden = false; $('#imgBtn').hidden = false; $('#recBar').hidden = true; $('#recCancel').hidden = true; $('#chatSend').hidden = false;
+  setMicIdle();
+}
+async function finishVoice() {
+  const secs = Math.min(VOICE_MAX, (Date.now() - voiceStart) / 1000);
+  const blob = new Blob(voiceChunks, {type: 'video/webm'});   // stored as WebM (audio only)
+  resetVoiceUI();
+  if (voiceCancel) return;
+  if (secs < 0.6 || !blob.size) { $('#chatMsg').textContent = 'Too short. Click the mic, talk, then click Send.'; return; }
+  $('#chatMsg').textContent = 'Sending voice message…';
+  busy = true;
+  try {
+    const path = `${session.user.id}/voice-${crypto.randomUUID()}.webm`;
+    const up = await sb.storage.from(BUCKET).upload(path, blob, {contentType: 'video/webm'});
+    if (up.error) throw up.error;
+    const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body: `[voice] ${path} ${secs.toFixed(1)}`}).select('id,user_id,body,created_at').single();
+    if (error) { sb.storage.from(BUCKET).remove([path]); throw error; }
+    $('#chatMsg').textContent = '';
+    if (!chat.some(x => x.id === data.id)) { const prev = chat[chat.length - 1]; chat.push(data); appendMsg(data, prev); }
+  } catch (e) {
+    $('#chatMsg').textContent = /Slow down/i.test(errMsg(e)) ? 'Slow down! One message per second.' : 'Could not send voice message: ' + errMsg(e);
+  } finally { busy = false; }
+}
+/* ---------- pictures: 🖼 button, Ctrl+V, or drag & drop onto the chat ----------
+   Turned into a JPEG of max 1600 px (small and quick to load; the server only takes JPEG
+   pictures). The message is "[image] <file path> <width> <height>". */
+const IMG_RE = /^\[image\] (\S+) (\d+) (\d+)$/;
+const ICON_IMG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+$('#imgBtn').innerHTML = ICON_IMG;
+function chatImage(im, p) {
+  const w = +im[2], ht = +im[3], url = pub(im[1]);
+  const img = h('img', {class: 'mimg', src: url, alt: 'Picture from ' + (p.username || 'a player'), loading: 'lazy', width: String(w), height: String(ht),
+    style: `aspect-ratio:${w}/${ht}`, onclick: () => openImage(url, p.username)});
+  img.onload = () => { const l = $('#chatList'); if (l.scrollHeight - l.scrollTop - l.clientHeight < 400) l.scrollTop = l.scrollHeight; };
+  return img;
+}
+function openImage(url, who) {
+  $('#imgBig').src = url; $('#imgWho').textContent = who ? 'From ' + who : '';
+  $('#imgSave').onclick = async () => {
+    try {
+      const b = await (await fetch(url)).blob(), u = URL.createObjectURL(b);
+      const a = h('a', {href: u, download: 'Troll Face Clipz picture.jpg'}); document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(u), 10000);
+    } catch { toast('Could not save the picture.', true); }
+  };
+  $('#imgDlg').showModal();
+}
+$('#imgClose').onclick = () => $('#imgDlg').close();
+$('#imgDlg').addEventListener('click', e => { if (e.target === $('#imgDlg')) $('#imgDlg').close(); });
+async function toChatJpeg(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('That file isn\'t a picture we can read.')); i.src = url; });
+    const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+    const g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, c.width, c.height);   // see-through PNGs get a black background
+    g.drawImage(img, 0, 0, c.width, c.height);
+    return {blob: await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85)), w: c.width, h: c.height};
+  } finally { URL.revokeObjectURL(url); }
+}
+// Uploads one picture and posts it as a chat message. Returns true when it worked.
+async function sendImage(file) {
+  try {
+    const j = await toChatJpeg(file);
+    const path = `${session.user.id}/img-${crypto.randomUUID()}.jpg`;
+    const up = await sb.storage.from(BUCKET).upload(path, j.blob, {contentType: 'image/jpeg'});
+    if (up.error) throw up.error;
+    const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body: `[image] ${path} ${j.w} ${j.h}`}).select('id,user_id,body,created_at').single();
+    if (error) { sb.storage.from(BUCKET).remove([path]); throw error; }
+    if (!chat.some(x => x.id === data.id)) { const prev = chat[chat.length - 1]; chat.push(data); appendMsg(data, prev); }
+    return true;
+  } catch (e) {
+    $('#chatMsg').textContent = /Slow down/i.test(errMsg(e)) ? 'Slow down! One message per second.' : 'Could not send the picture: ' + errMsg(e);
+    return false;
+  }
+}
+/* Pictures you add wait in a tray above the chat box (like Discord): look at them (👁),
+   remove them (🗑), then Send (or Enter) sends them, with your text if you typed some. */
+const MAX_ATTACH = 5;
+let pending = [];   // {file, url}
+function addPictures(files) {
+  if (!session || !me) { toast('Sign in to send pictures.', true); return; }
+  let skipped = 0;
+  for (const f of files) {
+    if (!/^image\//.test(f.type) || f.size > 25 * 1024 * 1024) { skipped++; continue; }
+    if (pending.length >= MAX_ATTACH) { $('#chatMsg').textContent = `Up to ${MAX_ATTACH} pictures at once.`; break; }
+    pending.push({file: f, url: URL.createObjectURL(f)});
+  }
+  if (skipped) $('#chatMsg').textContent = skipped === 1 ? 'That file isn\'t a picture (or is over 25 MB).' : `${skipped} files skipped (not pictures, or over 25 MB).`;
+  renderTray();
+  $('#chatInput').focus();
+}
+function removePicture(p) {
+  URL.revokeObjectURL(p.url);
+  pending = pending.filter(x => x !== p); renderTray();
+}
+function renderTray() {
+  const tray = $('#attachTray');
+  tray.hidden = !pending.length;
+  tray.replaceChildren(...pending.map(p => h('div', {class: 'att' + (p.sending ? ' sending' : '')},
+    h('img', {src: p.url, alt: p.file.name || 'Picture', onclick: () => openImage(p.url, '')}),
+    h('div', {class: 'an', text: p.file.name || 'image.png', title: p.file.name || ''}),
+    h('div', {class: 'atools'},
+      h('button', {type: 'button', title: 'View', 'aria-label': 'View picture', text: '👁', onclick: () => openImage(p.url, '')}),
+      p.sending ? null : h('button', {type: 'button', class: 'rm', title: 'Remove', 'aria-label': 'Remove picture', text: '🗑', onclick: () => removePicture(p)})))));
+  $('#chatInput').placeholder = pending.length ? 'Add a message (optional), then Enter to send' : 'Say something… type @ to mention someone (Enter to send)';
+}
+$('#imgBtn').onclick = () => $('#imgFile').click();
+$('#imgFile').onchange = e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) addPictures(fs); };
+$('#chatInput').addEventListener('paste', e => {
+  const fs = [...(e.clipboardData && e.clipboardData.files || [])].filter(x => /^image\//.test(x.type));
+  if (fs.length) { e.preventDefault(); addPictures(fs); }
+});
+let dragDepth = 0;
+$('#chat').addEventListener('dragenter', e => { if ([...e.dataTransfer.types].includes('Files')) { dragDepth++; $('#chat').classList.add('dropping'); } });
+$('#chat').addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('#chat').classList.remove('dropping'); } });
+$('#chat').addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
+$('#chat').addEventListener('drop', e => {
+  e.preventDefault(); dragDepth = 0; $('#chat').classList.remove('dropping');
+  const fs = [...e.dataTransfer.files].filter(x => /^image\//.test(x.type));
+  if (fs.length) addPictures(fs); else $('#chatMsg').textContent = 'Only pictures can be dropped here.';
+});
+$('#micBtn').onclick = () => voiceRec ? stopVoice(false) : startVoice();
+$('#recCancel').onclick = () => stopVoice(true);
+let sendingChat = false;
+$('#chatForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const inp = $('#chatInput'), body = inp.value.trim();
+  if ((!body && !pending.length) || sendingChat || !session) return;
+  sendingChat = true; $('#chatSend').disabled = true; $('#imgBtn').disabled = true; $('#chatMsg').textContent = '';
+  try {
+    if (body) {
+      const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body}).select('id,user_id,body,created_at').single();
+      if (error) { $('#chatMsg').textContent = /Slow down/i.test(error.message) ? 'Slow down! One message per second.' : 'Could not send: ' + error.message; return; }
+      inp.value = '';
+      sendTyping('idle', true);
+      if (!chat.some(x => x.id === data.id)) { await ensurePeople([data.user_id]); const prev = chat[chat.length - 1]; chat.push(data); appendMsg(data, prev); }
+    }
+    // Then the pictures, one by one (the server allows one message per second).
+    busy = true;
+    let first = !body;
+    for (const p of [...pending]) {
+      if (!first) await new Promise(r => setTimeout(r, 1100));
+      first = false;
+      p.sending = true; renderTray();
+      $('#chatMsg').textContent = pending.length > 1 ? `Sending pictures… (${pending.length} left)` : 'Sending picture…';
+      if (!(await sendImage(p.file))) { p.sending = false; renderTray(); return; }   // keep the rest in the tray
+      removePicture(p);
+    }
+    $('#chatMsg').textContent = '';
+  } finally { sendingChat = false; busy = false; $('#chatSend').disabled = false; $('#imgBtn').disabled = false; inp.focus(); }
+});
+
+function setFilter(kind, uid, p) {
+  filter = {kind, uid: uid || null};
+  $('#fAll').setAttribute('aria-pressed', kind === 'all');
+  $('#fMine').setAttribute('aria-pressed', kind === 'mine');
+  $('#fPlayers').setAttribute('aria-pressed', kind === 'players');
+  $('#fChat').setAttribute('aria-pressed', kind === 'chat');
+  $('#q').placeholder = kind === 'players' ? 'Search players' : 'Search clips or players';
+  if (kind === 'players') loadPlayers();
+  if (kind === 'chat') { chatUnread = 0; updateChatBadge(); openChat(); }
+  const fu = $('#fUser'); fu.hidden = kind !== 'user'; fu.setAttribute('aria-pressed', kind === 'user');
+  if (kind === 'user') fu.textContent = ((p && p.face) || '😏') + ' ' + ((p && p.username) || 'Player') + '  ✕';
+  render();
+}
+$('#fAll').onclick = () => setFilter('all');
+$('#fMine').onclick = () => setFilter('mine');
+$('#fPlayers').onclick = () => setFilter('players');
+$('#fChat').onclick = () => setFilter('chat');
+$('#fUser').onclick = () => setFilter('all');
+$('#q').oninput = e => { query = e.target.value.trim(); render(); };
+$('#refresh').onclick = () => { loadClips(); if (filter.kind === 'players') loadPlayers(); };
+$('#home').onclick = e => { e.preventDefault(); setFilter('all'); };
+
+/* ---------- auth ---------- */
+let mode = 'in';
+function setMode(m) {
+  mode = m;
+  $('#tIn').setAttribute('aria-pressed', m === 'in'); $('#tUp').setAttribute('aria-pressed', m === 'up');
+  $('#authGo').textContent = m === 'in' ? 'Sign in' : 'Create account';
+  $('#aPass').autocomplete = m === 'in' ? 'current-password' : 'new-password';
+  $('#authMsg').textContent = m === 'up' ? 'Username: 3–20 letters, numbers, _ . or -. Password: at least 6 characters. There is no email, so don\'t forget your password. Other players can see when you were last online, which app version you have, and when you\'ve read the chat.' : '';
+}
+// Accounts are username + password only. Supabase needs an email-shaped login, so each
+// username maps to a placeholder address that never receives mail.
+const USER_RE = /^[A-Za-z0-9_.-]{3,20}$/;
+const loginFor = u => u.toLowerCase() + '@players.trollfaceclipz.app';
+$('#tIn').onclick = () => setMode('in');
+$('#tUp').onclick = () => setMode('up');
+$('#signInBtn').onclick = () => { setMode('in'); $('#authDlg').showModal(); };
+$('#authClose').onclick = () => $('#authDlg').close();
+$('#authForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const username = $('#aUser').value.trim(), password = $('#aPass').value;
+  if (!USER_RE.test(username)) { $('#authMsg').textContent = 'Usernames are 3–20 letters, numbers, _ . or -, with no spaces.'; return; }
+  const go = $('#authGo'); go.disabled = true; $('#authMsg').textContent = '';
+  try {
+    if (mode === 'in') {
+      const {error} = await sb.auth.signInWithPassword({email: loginFor(username), password});
+      if (error) throw error;
+    } else {
+      const {data, error} = await sb.auth.signUp({email: loginFor(username), password, options: {data: {username}}});
+      if (error) throw error;
+      if (!data.session) {   // server still has "Confirm email" on; the database auto-confirms, so sign straight in
+        const r = await sb.auth.signInWithPassword({email: loginFor(username), password});
+        if (r.error) throw new Error('confirm-on');
+      }
+      toast('Welcome, ' + username + '!');
+    }
+    $('#authDlg').close(); $('#aPass').value = '';
+  } catch (err) {
+    const m = errMsg(err);
+    $('#authMsg').textContent = m === 'taken' || /already registered|already exists|duplicate/i.test(m) ? 'That username is taken. Try another one.'
+      : /Invalid login/i.test(m) ? 'Wrong username or password.'
+      : m === 'confirm-on' || /not confirmed/i.test(m) ? 'Accounts can\'t be activated yet: the server still has email confirmation turned on.'
+      : /rate limit/i.test(m) ? 'Too many sign-ups right now. Try again in a few minutes.'
+      : m;
+  } finally { go.disabled = false; }
+});
+
+/* ---------- profile ---------- */
+let pickedFace = FACES[0];
+function openProfile() {
+  $('#profTitle').textContent = me ? 'Your account' : 'Finish your account';
+  $('#pHandle').value = me ? me.username : ((session && session.user.user_metadata && session.user.user_metadata.username) || '');
+  $('#pBio').value = me ? me.bio : '';
+  pickedFace = me ? me.face : FACES[0];
+  const box = $('#pFaces'); box.replaceChildren();
+  FACES.forEach(f => box.append(h('button', {type: 'button', 'aria-pressed': f === pickedFace, text: f, onclick: e => {
+    pickedFace = f; box.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === e.currentTarget)); refreshAvatarPreview(); }})));
+  refreshAvatarPreview();
+  $('#pwBox').hidden = !me; resetPwForm(false);
+  if (!$('#profDlg').open) $('#profDlg').showModal();
+}
+$('#meBtn').onclick = openProfile;
+
+/* ---------- password: show/hide eyes + change password ---------- */
+// Passwords are stored only as a one-way hash, so nobody (not even the app) can show the
+// saved one. The eye shows what you type; "Change password" sets a new one.
+document.querySelectorAll('.pw .eye').forEach(b => b.onclick = e => {
+  e.preventDefault();
+  const inp = b.previousElementSibling, show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  b.setAttribute('aria-pressed', show); b.title = show ? 'Hide password' : 'Show password'; b.setAttribute('aria-label', b.title);
+  inp.focus();
+});
+function resetPwForm(open) {
+  $('#pwForm').hidden = !open; $('#pwOpen').hidden = open;
+  ['#pwOld', '#pwNew'].forEach(s => { const i = $(s); i.value = ''; i.type = 'password'; });
+  $('#pwForm').querySelectorAll('.eye').forEach(b => { b.setAttribute('aria-pressed', false); b.title = 'Show password'; });
+  $('#pwMsg').textContent = '';
+  if (open) $('#pwOld').focus();
+}
+$('#pwOpen').onclick = () => resetPwForm(true);
+$('#pwCancel').onclick = () => resetPwForm(false);
+async function changePassword() {
+  const old = $('#pwOld').value, neu = $('#pwNew').value, msg = $('#pwMsg');
+  if (!old) { msg.textContent = 'Type your current password.'; return; }
+  if (neu.length < 6) { msg.textContent = 'The new password needs at least 6 characters.'; return; }
+  if (neu === old) { msg.textContent = 'That is the same as your current password.'; return; }
+  const go = $('#pwGo'); go.disabled = true; msg.textContent = 'Checking…';
+  try {
+    const check = await sb.auth.signInWithPassword({email: session.user.email, password: old});
+    if (check.error) { msg.textContent = /Invalid login/i.test(check.error.message) ? 'Your current password is wrong.' : check.error.message; return; }
+    const {error} = await sb.auth.updateUser({password: neu});
+    if (error) { msg.textContent = /different/i.test(error.message) ? 'That is the same as your current password.' : error.message; return; }
+    resetPwForm(false); toast('Password changed.');
+  } finally { go.disabled = false; }
+}
+$('#pwGo').onclick = changePassword;
+['#pwOld', '#pwNew'].forEach(s => $(s).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); changePassword(); } }));
+$('#profClose').onclick = () => $('#profDlg').close();
+$('#signOut').onclick = async () => { await sb.auth.signOut(); $('#profDlg').close(); toast('Signed out.'); };
+$('#profForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const username = me ? me.username : ((session.user.user_metadata || {}).username || '');
+  if (!USER_RE.test(username)) { toast('This account has no valid username. Sign out and create a new account.', true); return; }
+  $('#profSave').disabled = true;
+  const row = {id: session.user.id, username, face: pickedFace, bio: $('#pBio').value.trim()};
+  const {data, error} = await sb.from('profiles').upsert(row).select().single();
+  $('#profSave').disabled = false;
+  if (error) { toast(/duplicate|unique/i.test(error.message) ? 'That username is taken. Try another one.' : 'Could not save: ' + error.message, true); return; }
+  const isNew = !me; me = data; renderMe(); $('#profDlg').close(); loadClips();
+  toast(isNew ? 'Welcome, ' + username + '! Hit "Upload clip" to post.' : 'Account saved.');
+});
+
+/* ---------- video helpers ---------- */
+function loadVideo(src, attach) {
+  return new Promise((res, rej) => {
+    const v = document.createElement('video');
+    v.muted = true; v.preload = 'auto'; v.playsInline = true; v.crossOrigin = 'anonymous';
+    if (attach) { v.style.cssText = 'position:fixed;left:-10000px;top:0;width:320px;height:180px'; document.body.append(v); }
+    v.onloadedmetadata = async () => { await fixDuration(v); res(v); };
+    v.onerror = () => rej(new Error('This file could not be read as a video.'));
+    v.src = src;
+  });
+}
+function fixDuration(v) {
+  if (isFinite(v.duration) && v.duration > 0) return Promise.resolve();
+  return new Promise(res => {
+    const done = () => { v.removeEventListener('durationchange', hd); v.currentTime = 0; res(); };
+    const hd = () => { if (isFinite(v.duration) && v.duration > 0) done(); };
+    v.addEventListener('durationchange', hd); v.currentTime = 1e101; setTimeout(done, 3000);
+  });
+}
+function seek(v, t) { return new Promise(res => { const hs = () => { v.removeEventListener('seeked', hs); res(); }; v.addEventListener('seeked', hs); v.currentTime = t; setTimeout(hs, 2500); }); }
+async function makeThumb(url) {
+  const v = await loadVideo(url); const d = isFinite(v.duration) ? v.duration : 0;
+  await seek(v, Math.min(d * 0.4, Math.max(0, d - 0.1)));
+  const c = document.createElement('canvas'); c.width = 480; c.height = Math.round(480 * (v.videoHeight || 9) / (v.videoWidth || 16));
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  return {blob: await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8)), duration: d};
+}
+const pickMime = () => ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+  .find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+// Re-encodes a too-big clip in real time at a bitrate that fits under the size limit.
+// Same check as the desktop app: Troll Face Clipz recordings end with this tiny stamp.
+const TFC_STAMP = 'TrollFaceClipz:recorded';
+async function hasTFCStamp(blob) {
+  try {
+    const tail = new Uint8Array(await blob.slice(Math.max(0, blob.size - 256)).arrayBuffer());
+    return new TextDecoder('latin1').decode(tail).includes(TFC_STAMP);
+  } catch { return false; }
+}
+// Clips posted before the stamp existed (before this cutoff) are never flagged.
+const STAMP_CUTOFF = Date.parse('2026-11-21T16:40:00Z');
+const notFromTFC = c => !/\/tfc-/.test(c.video_path || '') && new Date(c.created_at).getTime() > STAMP_CUTOFF;
+const infoBadge = () => {
+  const b = h('span', {class: 'notfc', tabindex: '0', 'aria-label': 'This clip was not recorded with Troll Face Clipz', text: 'i'});
+  b.append(h('span', {class: 'notfc-tip', text: 'This clip was not recorded with Troll Face Clipz'}));
+  b.addEventListener('click', e => e.stopPropagation());
+  return b;
+};
+async function shrink(file, duration, actx, onProgress) {
+  const url = URL.createObjectURL(file); const v = await loadVideo(url, true);
+  try {
+    v.muted = false;
+    const dest = actx.createMediaStreamDestination(); actx.createMediaElementSource(v).connect(dest);
+    const cs = v.captureStream ? v.captureStream() : v.mozCaptureStream();
+    const playing = new Promise(r => v.addEventListener('playing', r, {once: true}));
+    await v.play(); await playing;
+    const vbr = Math.max(500000, Math.floor(MAX_BYTES * 0.9 * 8 / Math.max(1, duration)) - 128000);
+    const rec = new MediaRecorder(new MediaStream([...cs.getVideoTracks(), ...dest.stream.getAudioTracks()]), {mimeType: pickMime() || undefined, videoBitsPerSecond: vbr, audioBitsPerSecond: 128000});
+    const chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    const stopped = new Promise(r => rec.onstop = r); rec.start(500);
+    await new Promise(res => { v.addEventListener('timeupdate', () => { onProgress(Math.min(1, v.currentTime / duration)); if (v.currentTime >= duration - 0.05) res(); }); v.addEventListener('ended', res); });
+    rec.stop(); await stopped;
+    const type = (rec.mimeType || 'video/webm').split(';')[0];
+    return new File(chunks, 'clip.' + (type.includes('mp4') ? 'mp4' : 'webm'), {type});
+  } finally { v.pause(); v.remove(); URL.revokeObjectURL(url); }
+}
+
+/* ---------- upload ---------- */
+let upFile = null, upDuration = 0, upUrl = null, busy = false;
+$('#uploadBtn').onclick = () => {
+  upFile = null; $('#upTitle').value = ''; $('#upCaption').value = ''; $('#upInfo').textContent = '';
+  $('#upPreview').hidden = true; $('#upPreview').removeAttribute('src'); $('#dropTxt').hidden = false;
+  $('#upProg').hidden = true; $('#upPost').disabled = true; $('#upDlg').showModal();
+};
+$('#upClose').onclick = () => { if (!busy) $('#upDlg').close(); };
+$('#upDlg').addEventListener('cancel', e => { if (busy) e.preventDefault(); });
+const drop = $('#drop');
+drop.onclick = e => { if (e.target.tagName !== 'VIDEO') $('#upFile').click(); };
+drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#upFile').click(); } };
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]); };
+$('#upFile').onchange = e => { if (e.target.files[0]) pickFile(e.target.files[0]); e.target.value = ''; };
+async function pickFile(f) {
+  const n = f.name.toLowerCase();
+  const type = /^video\/(mp4|webm)$/.test(f.type) ? f.type : n.endsWith('.mp4') ? 'video/mp4' : n.endsWith('.webm') ? 'video/webm' : '';
+  if (!type) { toast('Pick an MP4 or WebM video.', true); return; }
+  if (upUrl) URL.revokeObjectURL(upUrl);
+  upUrl = URL.createObjectURL(f);
+  try { const v = await loadVideo(upUrl); upDuration = isFinite(v.duration) ? v.duration : 0; } catch (e) { toast(e.message, true); return; }
+  upFile = f.type === type ? f : new File([f], f.name, {type});
+  const pv = $('#upPreview'); pv.src = upUrl; pv.hidden = false; $('#dropTxt').hidden = true;
+  if (!$('#upTitle').value) $('#upTitle').value = f.name.replace(/\.(mp4|webm)$/i, '').slice(0, 80);
+  $('#upInfo').textContent = fmtTime(upDuration) + ' · ' + fmtSize(f.size) + (f.size > MAX_BYTES ? ' · Over 50 MB, so it gets compressed first (takes about ' + fmtTime(upDuration) + ').' : '');
+  $('#upPost').disabled = false;
+}
+$('#upPost').onclick = async () => {
+  if (!upFile || busy || !session) return;
+  const actx = new AudioContext();
+  busy = true; $('#upPost').disabled = true; $('#upProg').hidden = false;
+  const stage = (t, p) => { $('#upStage').textContent = t; $('#upBar').style.width = (p * 100) + '%'; $('#upPct').textContent = Math.round(p * 100) + '%'; };
+  const uid = session.user.id, id = crypto.randomUUID();
+  let vpath = null, tpath = null;
+  try {
+    let file = upFile;
+    const fromTFC = await hasTFCStamp(upFile);   // was this recorded with Troll Face Clipz?
+    if (file.size > MAX_BYTES) {
+      $('#upPreview').pause(); await actx.resume();
+      file = await shrink(file, upDuration, actx, p => stage('Compressing to fit…', p * 0.6));
+      if (file.size > 50 * 1024 * 1024) throw new Error('Still over 50 MB after compressing. Trim it shorter in the Troll Face Clipz app.');
+    }
+    stage('Making thumbnail…', 0.62);
+    const fu = URL.createObjectURL(file); let th; try { th = await makeThumb(fu); } finally { URL.revokeObjectURL(fu); }
+    stage('Uploading video…', 0.68);
+    vpath = `${uid}/${fromTFC ? 'tfc-' : ''}${id}.${file.type.includes('mp4') ? 'mp4' : 'webm'}`;
+    let r = await sb.storage.from(BUCKET).upload(vpath, file, {contentType: file.type});
+    if (r.error) { vpath = null; throw r.error; }
+    stage('Uploading thumbnail…', 0.92);
+    if (th.blob) { tpath = `${uid}/${id}.jpg`; r = await sb.storage.from(BUCKET).upload(tpath, th.blob, {contentType: 'image/jpeg'}); if (r.error) tpath = null; }
+    stage('Posting…', 0.97);
+    r = await sb.from('clips').insert({id, title: $('#upTitle').value.trim().slice(0, 80) || 'Untitled clip', caption: $('#upCaption').value.trim(),
+      video_path: vpath, thumb_path: tpath, duration: th.duration || upDuration, size: file.size, mime: file.type});
+    if (r.error) throw r.error;
+    stage('Posted!', 1); $('#upDlg').close(); toast('Clip posted 😏'); setFilter('all'); loadClips();
+  } catch (e) {
+    toast('Upload failed: ' + errMsg(e), true);
+    const left = [vpath, tpath].filter(Boolean); if (left.length) sb.storage.from(BUCKET).remove(left);
+  } finally { busy = false; $('#upPost').disabled = !upFile; actx.close().catch(() => {}); }
+};
+
+/* ---------- player ---------- */
+function openClip(c) {
+  current = c; const p = c.profiles || {};
+  $('#pTitle').textContent = c.title || 'Untitled clip';
+  const oldInfo = document.getElementById('pInfo'); if (oldInfo) oldInfo.remove();
+  if (notFromTFC(c)) { const b = infoBadge(); b.id = 'pInfo'; $('#pTitle').after(b); }
+  const pv = $('#pVideo'); pv.src = pub(c.video_path);
+  $('#pBy').replaceChildren(faceEl(c.user_id, p.face), h('b', {text: p.username || 'Unknown player', title: 'Open profile', onclick: () => openUser(c.user_id)}),h('span', {text: '· ' + ago(c.created_at) + ' · ' + fmtTime(c.duration)}));
+  $('#pCaption').textContent = c.caption || '';
+  $('#pShareBox').hidden = true;
+  const del = $('#pDel'); del.textContent = 'Delete'; delete del.dataset.armed; del.hidden = !(session && c.user_id === session.user.id);
+  updateLike();
+  if (location.hash !== '#' + c.id) history.replaceState(null, '', '#' + c.id);
+  if (!$('#playDlg').open) $('#playDlg').showModal();
+  pv.play().catch(() => {});
+}
+function closePlayer() {
+  current = null; const pv = $('#pVideo'); pv.pause(); pv.removeAttribute('src'); pv.load();
+  if ($('#playDlg').open) $('#playDlg').close();
+  history.replaceState(null, '', location.pathname + location.search);
+}
+$('#pClose').onclick = closePlayer;
+$('#playDlg').addEventListener('cancel', e => { e.preventDefault(); closePlayer(); });
+function updateLike() {
+  if (!current) return;
+  const liked = myLikes.has(current.id), b = $('#pLike');
+  b.textContent = (liked ? '♥ Liked' : '♡ Like') + ' · ' + current.likeCount;
+  b.title = me ? '' : 'Sign in to like clips';
+}
+let liking = false;
+$('#pLike').onclick = async () => {
+  if (!current || liking) return;
+  if (!session || !me) { toast('Sign in to like clips.', true); return; }
+  liking = true; const c = current, liked = myLikes.has(c.id);
+  const r = liked ? await sb.from('likes').delete().eq('user_id', session.user.id).eq('clip_id', c.id)
+                  : await sb.from('likes').insert({user_id: session.user.id, clip_id: c.id});
+  liking = false;
+  if (r.error) { toast('Could not save your like: ' + r.error.message, true); return; }
+  if (liked) { myLikes.delete(c.id); c.likeCount--; } else { myLikes.add(c.id); c.likeCount++; }
+  updateLike(); render();
+};
+$('#pShare').onclick = async () => {
+  if (!current) return;
+  const url = siteUrl() ? siteUrl() + '#' + current.id : pub(current.video_path);
+  $('#pLink').textContent = url; $('#pShareBox').hidden = false;
+  if (navigator.share) { try { await navigator.share({title: current.title, text: 'Check out this clip on Troll Face Clipz 😏', url}); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(url); toast('Link copied. Paste it anywhere.'); }
+  catch { const r = document.createRange(); r.selectNodeContents($('#pLink')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Press Ctrl+C to copy the link.'); }
+};
+$('#pDl').onclick = async () => {
+  if (!current) return; const c = current, b = $('#pDl'); b.disabled = true;
+  try {
+    const res = await fetch(pub(c.video_path)); if (!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob(), url = URL.createObjectURL(blob);
+    const a = h('a', {href: url, download: (c.title || 'clip').replace(/[\\/:*?"<>|]+/g, '_') + '.' + (c.mime.includes('mp4') ? 'mp4' : 'webm')});
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch (e) { toast('Download failed: ' + errMsg(e), true); } finally { b.disabled = false; }
+};
+$('#pDel').onclick = async () => {
+  const b = $('#pDel'), c = current; if (!c) return;
+  if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Click again to delete forever'; return; }
+  b.disabled = true;
+  const r = await sb.from('clips').delete().eq('id', c.id);
+  if (!r.error) await sb.storage.from(BUCKET).remove([c.video_path, c.thumb_path].filter(Boolean));
+  b.disabled = false;
+  if (r.error) { toast('Could not delete: ' + r.error.message, true); return; }
+  closePlayer(); toast('Clip deleted.'); loadClips();
+};
+function openFromHash() {
+  const id = location.hash.slice(1);
+  if (!id || (current && current.id === id)) return;
+  const c = clips.find(x => x.id === id); if (c) openClip(c);
+}
+window.addEventListener('hashchange', openFromHash);
+
+/* ---------- boot ---------- */
+render();
+if (!window.supabase) {
+  showNotice('Could not reach the Troll Face Clipz servers. Check your internet connection and reload.', true);
+} else {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  sb.auth.onAuthStateChange((event, s) => {
+    const changed = (session && session.user.id) !== (s && s.user.id);
+    session = s;
+    if (changed || event === 'INITIAL_SESSION') setTimeout(loadMine, 0);
+  });
+  loadClips();
+  window.addEventListener('message', e => {
+    if (typeof e.data === 'string' && e.data.startsWith('tfc-bg-on')) {
+      document.documentElement.classList.add('bg-on');
+      const a = parseFloat(e.data.split(':')[1]);
+      if (isFinite(a)) document.documentElement.style.setProperty('--pa', String(a));
+      document.documentElement.style.setProperty('--blur', e.data.split(':')[2] === '0' ? '0px' : '10px');
+    }
+    if (e.data === 'tfc-bg-off') document.documentElement.classList.remove('bg-on');
+    if (typeof e.data === 'string' && e.data.startsWith('tfc-open-clip:')) {   // "✓ Posted" clicked in the app
+      const id = e.data.slice('tfc-open-clip:'.length);
+      if (window._lastOpen && window._lastOpen.id === id && Date.now() - window._lastOpen.at < 4000) return;   // the app sends it a few times
+      window._lastOpen = {id, at: Date.now()};
+      if (filter.kind !== 'all') setFilter('all');
+      const c = clips.find(x => x.id === id);
+      if (c) { if (!current || current.id !== id) openClip(c); }
+      else if (loaded) { loadClips().then(() => { const f = clips.find(x => x.id === id); if (f) openClip(f); else toast('That clip isn\'t on Clipz Online anymore.', true); }); }
+      else location.hash = id;   // still loading: opens as soon as the clips arrive
+    }
+    if (e.data === 'tfc-refresh') loadClips();
+    if (e.data === 'tfc-shown') markRead();   // the app switched back to this tab
+    if (e.data === 'tfc-open-chat' && filter.kind !== 'chat') setFilter('chat');   // clicked a chat notification
+    if (e.data === 'tfc-pause') {   // tab left: stop any sound
+      try { $('#pVideo').pause(); $('#upPreview').pause(); if (playingVoice) playingVoice.pause(); } catch {}
+    }
+  });
+  // phones: tap a message to show its tools; tap somewhere else to hide them
+  if (matchMedia('(hover:none)').matches) {
+    document.addEventListener('click', e => {
+      const m = e.target.closest && e.target.closest('.msg');
+      if (m && e.target.closest('a,button,.mention,.mimg,.vplayer,.rxns')) return;
+      document.querySelectorAll('.msg.tap').forEach(x => { if (x !== m) x.classList.remove('tap'); });
+      if (m) m.classList.toggle('tap');
+    });
+  }
+  if (matchMedia('(max-width:640px)').matches) $('#chatInput').placeholder = 'Message…';
+  window.tfcInChat = () => filter.kind === 'chat';   // the app skips chat notifications while you're here
+  window.tfcBusy = () => busy || !!voiceRec;   // the app won't unload this page mid-upload or mid-recording
+}
+</script>
+</body>
+</html>
