@@ -65,6 +65,18 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .pwdots{flex:1;letter-spacing:3px;color:var(--muted)}
 .pwform{display:flex;flex-direction:column;gap:10px;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
 .pwform input{background:var(--panel)}
+.pushbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--acc);border-radius:12px;background:rgba(215,255,58,.07);font-size:13px}
+.pushbar button{padding:5px 11px}
+/* bans */
+.bantag{color:var(--red);font-weight:700}
+.banline{flex:1 1 100%;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--red);border-radius:10px;background:rgba(255,77,109,.08);overflow-wrap:anywhere}
+.banline b{color:var(--red)}
+.unban{color:#3ddc97}
+#banned{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:var(--bg);text-align:center}
+#banned .bbox{max-width:760px}
+#banned h1{margin:0 0 18px;font:400 clamp(34px,9vw,84px)/1.05 var(--display);color:var(--red);letter-spacing:1px}
+#banned .breason{margin:0;font-size:clamp(17px,3.2vw,24px);overflow-wrap:anywhere;white-space:pre-wrap}
+#banned .breason b{color:var(--muted);font-weight:600}
 .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700}
 #chat{display:flex;flex-direction:column;gap:10px;height:calc(100vh - 260px);min-height:280px}
 #chat[hidden]{display:none}
@@ -365,6 +377,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
   <div id="notice" class="notice" hidden></div>
   <main><div id="grid" class="grid"></div>
     <section id="chat" hidden>
+      <div id="pushBar" class="pushbar" hidden><span id="pushBarText">🔔 Get a notification when someone chats.</span><div class="spacer"></div><button type="button" class="primary" id="pushBarOn">Turn on</button><button type="button" id="pushBarX" aria-label="Hide">✕</button></div>
       <div id="chatList" class="chatlist" aria-live="polite"></div>
       <div id="typingLine" class="typing" aria-live="polite"></div>
       <div id="attachTray" class="attachtray" hidden></div>
@@ -410,6 +423,9 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
     </div>
     <div class="f"><span class="small muted">Emoji (shown when you have no picture)</span><div class="faces" id="pFaces"></div></div>
     <label class="f">Bio <textarea id="pBio" maxlength="200" placeholder="What do you play?"></textarea></label>
+    <div class="f" id="notifBox" hidden><span class="small muted">Phone notifications</span>
+      <div class="row"><span id="notifState" class="small" style="flex:1"></span><button type="button" id="notifBtn">🔔 Turn on</button></div>
+    </div>
     <div class="f" id="pwBox" hidden><span class="small muted">Password</span>
       <div class="row"><span class="pwdots">••••••••</span><button type="button" id="pwOpen">🔑 Change password</button></div>
       <div id="pwForm" class="pwform" hidden>
@@ -482,6 +498,24 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
   </form>
 </dialog>
 
+<!-- owner only: ban a player, with a reason they will see -->
+<dialog id="banDlg">
+  <div class="dh"><h3 id="bnTitle">Ban player</h3><button id="bnClose" aria-label="Close">✕</button></div>
+  <form class="db" id="bnForm">
+    <div class="small muted">They can still use the clipper, but Clipz Online will only show "You have been banned" with this reason. You can unban them any time from their profile.</div>
+    <label class="f">Reason <textarea id="bnReason" maxlength="300" placeholder="Why are they banned?"></textarea></label>
+    <div class="row"><span id="bnMsg" class="small muted"></span><div class="spacer"></div><button type="button" id="bnCancel">Cancel</button><button type="submit" class="danger" id="bnGo">🚫 Ban</button></div>
+  </form>
+</dialog>
+
+<!-- shown instead of everything when you're banned -->
+<div id="banned" hidden>
+  <div class="bbox">
+    <h1>YOU HAVE BEEN BANNED</h1>
+    <p class="breason"><b>Reason:</b> <span id="banReason"></span></p>
+  </div>
+</div>
+
 <div id="toasts" aria-live="polite"></div>
 
 <script>
@@ -543,6 +577,7 @@ async function loadMine() {
   me = null; myLikes = new Set();
   if (session) {
     const uid = session.user.id;
+    if (await checkBan()) return;   // banned: only the "You have been banned" screen
     const [p, l] = await Promise.all([
       sb.from('profiles').select('*').eq('id', uid).maybeSingle(),
       sb.from('likes').select('clip_id').eq('user_id', uid),
@@ -629,6 +664,7 @@ function renderMe() {
   $('#fMine').hidden = !me;
   $('#meFace').replaceWith(Object.assign(faceEl(me ? me.id : null, me ? me.face : '😏'), {id: 'meFace'}));
   $('#meName').textContent = me ? me.username : 'Finish account';
+  if (typeof updatePushUI === 'function') { updatePushUI(); sendWebPresence(); }
 }
 /* ---------- players ---------- */
 let players = [], playersLoaded = false;
@@ -639,6 +675,7 @@ async function loadPlayers() {
   playersLoaded = true;
   if (error) { toast('Could not load players: ' + error.message, true); players = []; }
   else players = data.map(p => ({...p, clipCount: (p.clips && p.clips[0] && p.clips[0].count) || 0}));
+  await loadBans();
   if (filter.kind === 'players') render();
 }
 // "● Online now · v1.9.6" / "Last online 2 h ago · v1.9.5". The app checks in every 2 minutes.
@@ -651,7 +688,7 @@ function presenceLine(p) {
     on = mins < 5;
     parts.push(on ? 'Online now' : 'Last online ' + ago(p.last_seen));
   }
-  if (p.app_version) parts.push('v' + p.app_version);
+  if (p.app_version) parts.push(p.app_version === 'mobile' ? '📱 Mobile web' : p.app_version === 'web' ? '🌐 Web' : 'v' + p.app_version);
   return h('div', {class: 'small presence' + (on ? ' on' : ''), text: (on ? '● ' : '') + parts.join(' · ')});
 }
 function renderPlayers(grid) {
@@ -671,7 +708,8 @@ function renderPlayers(grid) {
         h('div', {class: 'pname', text: p.username + (isMe ? ' (you)' : '')}),
         p.bio ? h('div', {class: 'pbio', text: p.bio}) : null,
         h('div', {class: 'muted small', text: `${p.clipCount} clip${p.clipCount === 1 ? '' : 's'} posted · joined ${new Date(p.created_at).toLocaleDateString()}`}),
-        presenceLine(p))));
+        presenceLine(p),
+        bans.has(p.id) ? h('div', {class: 'small bantag', text: '🚫 Banned'}) : null)));
   }
 }
 
@@ -974,6 +1012,7 @@ async function openUser(uid) {
   if ($('#playDlg').open) closePlayer();
   renderUser(uid, knownPeople().get(uid));
   if (!dlg.open) dlg.showModal();
+  if (session && session.user.id === OWNER_ID && uid !== OWNER_ID) loadBans().then(() => { if (dlg.open && dlg.dataset.uid === uid) renderUser(uid, knownPeople().get(uid)); });
   const {data} = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
   if (data) {
     chatPeople.set(uid, {...(chatPeople.get(uid) || {}), ...data});
@@ -990,9 +1029,16 @@ function renderUser(uid, p) {
   const stat = (v, label) => h('div', {class: 'ustat'}, h('b', {text: String(v)}), h('span', {class: 'small muted', text: label}));
   const joined = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'}) : '–';
   const actions = h('div', {class: 'row'});
+  const ban = bans.get(uid), iAmOwner = !!(session && session.user.id === OWNER_ID);
+  if (iAmOwner && !isMe && ban) actions.append(h('div', {class: 'banline'}, h('b', {text: '🚫 Banned'}), h('span', {text: ban.reason ? 'Reason: ' + ban.reason : 'No reason given'})));
   if (isMe) actions.append(h('button', {text: '✏ Edit profile', onclick: () => { dlg.close(); openProfile(); }}));
   else if (session && me) actions.append(h('button', {class: 'primary', text: '@ Mention in chat', onclick: () => { dlg.close(); mentionInChat(p.username); }}));
-  if (!isMe && session && session.user.id === OWNER_ID) actions.append(h('button', {text: '🔑 Reset password', title: 'Owner only: set a new password for this player', onclick: () => openReset(uid, p.username)}));
+  if (!isMe && iAmOwner) {
+    actions.append(h('button', {text: '🔑 Reset password', title: 'Owner only: set a new password for this player', onclick: () => openReset(uid, p.username)}));
+    actions.append(ban
+      ? h('button', {class: 'unban', text: '✅ Unban', onclick: () => unbanUser(uid, p.username)})
+      : h('button', {class: 'danger', text: '🚫 Ban', title: 'Owner only: lock this player out of Clipz Online', onclick: () => openBan(uid, p.username)}));
+  }
   const grid = h('div', {class: 'ugrid'});
   if (!loaded) grid.append(h('div', {class: 'muted small', text: 'Loading clips…'}));
   else if (!theirs.length) grid.append(h('div', {class: 'muted small', text: isMe ? 'You haven\'t posted any clips yet.' : 'No clips posted yet.'}));
@@ -1011,6 +1057,76 @@ function renderUser(uid, p) {
     h('div', {class: 'small muted', text: 'Clips'}), grid].filter(Boolean));
 }
 $('#uClose').onclick = () => $('#userDlg').close();
+
+/* ---------- bans ----------
+   The owner bans from a player's profile (with a reason). The server locks banned players out
+   of chat, reactions, likes and posting; this page just shows them "You have been banned". */
+const bans = new Map();   // uid -> {reason}; filled for the owner only
+let bannedNow = false, banChannel = null;
+async function loadBans() {
+  if (!sb || !session || session.user.id !== OWNER_ID) { bans.clear(); return; }
+  const {data, error} = await sb.from('bans').select('user_id,reason');
+  if (error) return;   // bans.sql not run yet
+  bans.clear(); data.forEach(b => bans.set(b.user_id, {reason: b.reason}));
+}
+// Returns true (and shows the ban screen) when the signed-in player is banned.
+async function checkBan() {
+  if (!sb || !session) return false;
+  const {data, error} = await sb.from('bans').select('reason').eq('user_id', session.user.id).maybeSingle();
+  watchBan();
+  if (error || !data) { if (bannedNow) location.reload(); return false; }   // unbanned: back to normal
+  showBanned(data.reason);
+  return true;
+}
+function showBanned(reason) {
+  bannedNow = true;
+  $('#banReason').textContent = reason || 'No reason given';
+  document.querySelectorAll('dialog[open]').forEach(d => d.close());
+  HTMLDialogElement.prototype.showModal = function () {};   // nothing can pop up over it
+  try { stopChatLive(); } catch {}
+  try { $('#pVideo').pause(); if (playingVoice) playingVoice.pause(); } catch {}
+  $('#banned').hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+// Bans and unbans show up live.
+function watchBan() {
+  if (banChannel || !sb || !session) return;
+  banChannel = sb.channel('my-ban')
+    .on('postgres_changes', {event: '*', schema: 'public', table: 'bans'}, () => { if (session) checkBan(); })
+    .subscribe();
+}
+let banFor = null;
+function openBan(uid, name) {
+  banFor = {uid, name};
+  $('#bnTitle').textContent = 'Ban ' + name;
+  $('#bnReason').value = ''; $('#bnMsg').textContent = '';
+  $('#banDlg').showModal(); $('#bnReason').focus();
+}
+$('#bnClose').onclick = $('#bnCancel').onclick = () => $('#banDlg').close();
+$('#bnForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!banFor) return;
+  const reason = $('#bnReason').value.trim(), go = $('#bnGo');
+  go.disabled = true; $('#bnMsg').textContent = 'Banning…';
+  try {
+    const {error} = await sb.from('bans').upsert({user_id: banFor.uid, reason});
+    if (error) { $('#bnMsg').textContent = /bans|schema cache|does not exist/i.test(error.message) ? 'Run bans.sql in Supabase first.' : error.message; return; }
+    bans.set(banFor.uid, {reason});
+    $('#banDlg').close(); toast(banFor.name + ' is banned from Clipz Online.');
+    refreshAfterBan(banFor.uid);
+  } finally { go.disabled = false; }
+});
+async function unbanUser(uid, name) {
+  const {error} = await sb.from('bans').delete().eq('user_id', uid);
+  if (error) { toast('Could not unban: ' + error.message, true); return; }
+  bans.delete(uid); toast(name + ' is unbanned.');
+  refreshAfterBan(uid);
+}
+function refreshAfterBan(uid) {
+  const dlg = $('#userDlg');
+  if (dlg.open && dlg.dataset.uid === uid) renderUser(uid, knownPeople().get(uid));
+  if (filter.kind === 'players') render();
+}
 
 /* owner only: reset a player's password (the server checks it's really the owner) */
 let resetFor = null;
@@ -1446,6 +1562,7 @@ async function finishVoice() {
     if (up.error) throw up.error;
     const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body: `[voice] ${path} ${secs.toFixed(1)}`}).select('id,user_id,body,created_at').single();
     if (error) { sb.storage.from(BUCKET).remove([path]); throw error; }
+    pushToPhones(data);
     $('#chatMsg').textContent = '';
     if (!chat.some(x => x.id === data.id)) { const prev = chat[chat.length - 1]; chat.push(data); appendMsg(data, prev); }
   } catch (e) {
@@ -1498,6 +1615,7 @@ async function sendImage(file) {
     if (up.error) throw up.error;
     const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body: `[image] ${path} ${j.w} ${j.h}`}).select('id,user_id,body,created_at').single();
     if (error) { sb.storage.from(BUCKET).remove([path]); throw error; }
+    pushToPhones(data);
     if (!chat.some(x => x.id === data.id)) { const prev = chat[chat.length - 1]; chat.push(data); appendMsg(data, prev); }
     return true;
   } catch (e) {
@@ -1534,7 +1652,9 @@ function renderTray() {
     h('div', {class: 'atools'},
       h('button', {type: 'button', title: 'View', 'aria-label': 'View picture', text: '👁', onclick: () => openImage(p.url, '')}),
       p.sending ? null : h('button', {type: 'button', class: 'rm', title: 'Remove', 'aria-label': 'Remove picture', text: '🗑', onclick: () => removePicture(p)})))));
-  $('#chatInput').placeholder = pending.length ? 'Add a message (optional), then Enter to send' : 'Say something… type @ to mention someone (Enter to send)';
+  const small = matchMedia('(max-width:640px)').matches;
+  $('#chatInput').placeholder = pending.length ? (small ? 'Add a message (optional)' : 'Add a message (optional), then Enter to send')
+    : small ? 'Message…' : 'Say something… type @ to mention someone (Enter to send)';
 }
 $('#imgBtn').onclick = () => $('#imgFile').click();
 $('#imgFile').onchange = e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) addPictures(fs); };
@@ -1563,6 +1683,7 @@ $('#chatForm').addEventListener('submit', async e => {
     if (body) {
       const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body}).select('id,user_id,body,created_at').single();
       if (error) { $('#chatMsg').textContent = /Slow down/i.test(error.message) ? 'Slow down! One message per second.' : 'Could not send: ' + error.message; return; }
+      pushToPhones(data);
       inp.value = '';
       sendTyping('idle', true);
       if (!chat.some(x => x.id === data.id)) { await ensurePeople([data.user_id]); const prev = chat[chat.length - 1]; chat.push(data); appendMsg(data, prev); }
@@ -1661,7 +1782,7 @@ function openProfile() {
   FACES.forEach(f => box.append(h('button', {type: 'button', 'aria-pressed': f === pickedFace, text: f, onclick: e => {
     pickedFace = f; box.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === e.currentTarget)); refreshAvatarPreview(); }})));
   refreshAvatarPreview();
-  $('#pwBox').hidden = !me; resetPwForm(false);
+  $('#pwBox').hidden = !me; resetPwForm(false); updatePushUI();
   if (!$('#profDlg').open) $('#profDlg').showModal();
 }
 $('#meBtn').onclick = openProfile;
@@ -1920,6 +2041,89 @@ function openFromHash() {
 }
 window.addEventListener('hashchange', openFromHash);
 
+/* ---------- phone web app: notifications + "Mobile web" online status ----------
+   Only when Clipz Online is opened as a website (not inside the Windows app, which has its own
+   notifications). Pushes are sent by the "chat-push" Edge Function (supabase/functions). */
+const IS_WEB = window.top === window && location.protocol.startsWith('http');
+const IS_PHONE = matchMedia('(hover:none) and (pointer:coarse)').matches;
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const PUSH_OK = IS_WEB && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+let swReg = null, pushOn = false, pushBusy = false;
+if (IS_WEB && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(r => { swReg = r; refreshPush(); }).catch(() => {});
+  navigator.serviceWorker.addEventListener('message', e => { if (e.data === 'tfc-open-chat' && !bannedNow) setFilter('chat'); });
+}
+// Called after each chat message you send: tells everyone's phones (desktop senders too).
+function pushToPhones(m) {
+  if (!sb || !m || !m.id) return;
+  sb.functions.invoke('chat-push', {body: {action: 'send', message_id: m.id}}).catch(() => {});
+}
+const b64ToBytes = s => { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+async function refreshPush() {
+  pushOn = false;
+  try { if (PUSH_OK && swReg && Notification.permission === 'granted') pushOn = !!(await swReg.pushManager.getSubscription()); } catch {}
+  updatePushUI();
+}
+function pushHint() {
+  if (!IS_WEB) return '';
+  if (IS_IOS && !IS_STANDALONE) return 'On iPhone: tap Share → Add to Home Screen, then open Clipz Online from your home screen to turn these on.';
+  if (!PUSH_OK) return 'This browser can\'t show notifications.';
+  if (Notification.permission === 'denied') return 'Notifications are blocked. Allow them for this site in your browser settings.';
+  return '';
+}
+function updatePushUI() {
+  const signedIn = !!(session && me) && !bannedNow, hint = pushHint();
+  $('#notifBox').hidden = !IS_WEB || !signedIn;
+  $('#notifState').textContent = pushOn ? '✅ On for this device' : hint || 'Get a notification on this device when someone chats.';
+  $('#notifBtn').hidden = !!hint && !pushOn;
+  $('#notifBtn').textContent = pushOn ? '🔕 Turn off' : '🔔 Turn on';
+  $('#notifBtn').disabled = pushBusy;
+  let dismissed = false; try { dismissed = localStorage.getItem('tfc-pushbar-x') === '1'; } catch {}
+  $('#pushBar').hidden = !IS_WEB || !signedIn || pushOn || dismissed || (PUSH_OK && Notification.permission === 'denied');
+  $('#pushBarText').textContent = hint || '🔔 Get a notification when someone chats.';
+  $('#pushBarOn').hidden = !!hint;
+}
+async function enablePush() {
+  if (!PUSH_OK || pushBusy) return;
+  pushBusy = true; updatePushUI();
+  try {
+    if (await Notification.requestPermission() !== 'granted') { toast('Notifications weren\'t allowed.', true); return; }
+    const reg = swReg || await navigator.serviceWorker.ready;
+    const {data, error} = await sb.functions.invoke('chat-push', {body: {action: 'key'}});
+    if (error || !data || !data.key) throw new Error('Notifications aren\'t set up on the server yet.');
+    let sub = await reg.pushManager.getSubscription();
+    if (sub) await sub.unsubscribe();   // old key: start fresh
+    sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64ToBytes(data.key)});
+    const j = sub.toJSON();
+    const r = await sb.rpc('save_push_sub', {p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth});
+    if (r.error) throw r.error;
+    toast('🔔 Chat notifications are on for this device.');
+  } catch (e) { toast('Could not turn on notifications: ' + errMsg(e), true); }
+  finally { pushBusy = false; await refreshPush(); }
+}
+async function disablePush() {
+  pushBusy = true; updatePushUI();
+  try {
+    const sub = swReg && await swReg.pushManager.getSubscription();
+    if (sub) { await sb.rpc('remove_push_sub', {p_endpoint: sub.endpoint}); await sub.unsubscribe(); }
+    toast('🔕 Chat notifications are off for this device.');
+  } catch (e) { toast('Could not turn them off: ' + errMsg(e), true); }
+  finally { pushBusy = false; await refreshPush(); }
+}
+$('#notifBtn').onclick = () => pushOn ? disablePush() : enablePush();
+$('#pushBarOn').onclick = enablePush;
+$('#pushBarX').onclick = () => { try { localStorage.setItem('tfc-pushbar-x', '1'); } catch {} updatePushUI(); };
+// "● Online now · 📱 Mobile web" in the Players list (the Windows app sends its version instead).
+async function sendWebPresence() {
+  if (!IS_WEB || !sb || !session || bannedNow || document.visibilityState !== 'visible') return;
+  try { await sb.from('profiles').update({app_version: IS_PHONE ? 'mobile' : 'web', last_seen: new Date().toISOString()}).eq('id', session.user.id); } catch {}
+}
+if (IS_WEB) {
+  setInterval(sendWebPresence, 2 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { sendWebPresence(); refreshPush(); });
+}
+
 /* ---------- boot ---------- */
 render();
 if (!window.supabase) {
@@ -1932,6 +2136,7 @@ if (!window.supabase) {
     if (changed || event === 'INITIAL_SESSION') setTimeout(loadMine, 0);
   });
   loadClips();
+  if (new URLSearchParams(location.search).has('chat')) setFilter('chat');   // opened from a chat notification
   window.addEventListener('message', e => {
     if (typeof e.data === 'string' && e.data.startsWith('tfc-bg-on')) {
       document.documentElement.classList.add('bg-on');
