@@ -472,6 +472,16 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
   <div class="db" id="uBody"></div>
 </dialog>
 
+<!-- owner only: set a new password for a player who forgot theirs -->
+<dialog id="resetDlg">
+  <div class="dh"><h3 id="rsTitle">Reset password</h3><button id="rsClose" aria-label="Close">✕</button></div>
+  <form class="db" id="rsForm">
+    <div class="small muted">Pick a new password for this player, then tell it to them. Their old password stops working right away.</div>
+    <label class="f">New password <span class="pw"><input type="password" id="rsPass" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="eye" aria-label="Show password" title="Show password">👁</button></span></label>
+    <div class="row"><span id="rsMsg" class="small muted"></span><div class="spacer"></div><button type="button" id="rsCancel">Cancel</button><button type="submit" class="primary" id="rsGo">Set password</button></div>
+  </form>
+</dialog>
+
 <div id="toasts" aria-live="polite"></div>
 
 <script>
@@ -982,6 +992,7 @@ function renderUser(uid, p) {
   const actions = h('div', {class: 'row'});
   if (isMe) actions.append(h('button', {text: '✏ Edit profile', onclick: () => { dlg.close(); openProfile(); }}));
   else if (session && me) actions.append(h('button', {class: 'primary', text: '@ Mention in chat', onclick: () => { dlg.close(); mentionInChat(p.username); }}));
+  if (!isMe && session && session.user.id === OWNER_ID) actions.append(h('button', {text: '🔑 Reset password', title: 'Owner only: set a new password for this player', onclick: () => openReset(uid, p.username)}));
   const grid = h('div', {class: 'ugrid'});
   if (!loaded) grid.append(h('div', {class: 'muted small', text: 'Loading clips…'}));
   else if (!theirs.length) grid.append(h('div', {class: 'muted small', text: isMe ? 'You haven\'t posted any clips yet.' : 'No clips posted yet.'}));
@@ -1000,6 +1011,34 @@ function renderUser(uid, p) {
     h('div', {class: 'small muted', text: 'Clips'}), grid].filter(Boolean));
 }
 $('#uClose').onclick = () => $('#userDlg').close();
+
+/* owner only: reset a player's password (the server checks it's really the owner) */
+let resetFor = null;
+function openReset(uid, name) {
+  resetFor = {uid, name};
+  $('#rsTitle').textContent = 'Reset ' + name + '\'s password';
+  const i = $('#rsPass'); i.value = ''; i.type = 'password';
+  const eye = $('#rsForm .eye'); eye.setAttribute('aria-pressed', false); eye.title = 'Show password';
+  $('#rsMsg').textContent = '';
+  $('#resetDlg').showModal(); i.focus();
+}
+$('#rsClose').onclick = $('#rsCancel').onclick = () => $('#resetDlg').close();
+$('#rsForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!resetFor) return;
+  const pw = $('#rsPass').value, msg = $('#rsMsg');
+  if (pw.length < 6) { msg.textContent = 'At least 6 characters.'; return; }
+  const go = $('#rsGo'); go.disabled = true; msg.textContent = 'Saving…';
+  try {
+    const {error} = await sb.rpc('admin_set_password', {target: resetFor.uid, new_password: pw});
+    if (error) {
+      msg.textContent = /admin_set_password|could not find|schema cache/i.test(error.message)
+        ? 'Run admin-reset-password.sql in Supabase first.' : error.message;
+      return;
+    }
+    $('#resetDlg').close(); toast('New password set for ' + resetFor.name + '. Tell them what it is.');
+  } finally { go.disabled = false; }
+});
 function renderChat(scrollDown) {
   const list = $('#chatList');
   const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
