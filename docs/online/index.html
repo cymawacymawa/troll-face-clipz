@@ -2371,7 +2371,8 @@ $('#upPost').onclick = async () => {
   if (!upFile || busy || !session) return;
   const actx = new AudioContext();
   busy = true; $('#upPost').disabled = true; $('#upProg').hidden = false;
-  const stage = (t, p) => { $('#upStage').textContent = t; $('#upBar').style.width = (p * 100) + '%'; $('#upPct').textContent = Math.round(p * 100) + '%'; };
+  let step = 'Starting';
+  const stage = (t, p) => { step = t.replace(/…$/, ''); $('#upStage').textContent = t; $('#upBar').style.width = (p * 100) + '%'; $('#upPct').textContent = Math.round(p * 100) + '%'; };
   const uid = session.user.id, id = crypto.randomUUID();
   let vpath = null, tpath = null;
   try {
@@ -2397,7 +2398,10 @@ $('#upPost').onclick = async () => {
     if (r.error) throw r.error;
     stage('Posted!', 1); $('#upDlg').close(); toast('Clip posted 😏'); setFilter('all'); loadClips();
   } catch (e) {
-    toast('Upload failed: ' + errMsg(e), true);
+    // say which step broke, plus the file's size/type (helps fixing phone problems)
+    const det = upFile ? ` [${step} · ${fmtSize(upFile.size)} · ${upFile.type || '?'} · ${Math.round(upDuration)}s]` : '';
+    toast('Upload failed: ' + errMsg(e) + det, true);
+    $('#upInfo').textContent = 'Upload failed: ' + errMsg(e) + det;   // stays visible (the pop-up message goes away)
     const left = [vpath, tpath].filter(Boolean); if (left.length) sb.storage.from(BUCKET).remove(left);
   } finally {
     busy = false; $('#upPost').disabled = !upFile; actx.close().catch(() => {});
