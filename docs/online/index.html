@@ -1074,7 +1074,10 @@ async function checkBan() {
   if (!sb || !session) return false;
   const {data, error} = await sb.from('bans').select('reason').eq('user_id', session.user.id).maybeSingle();
   watchBan();
-  if (error || !data) { if (bannedNow) location.reload(); return false; }   // unbanned: back to normal
+  if (error || !data) {   // unbanned: back to normal
+    if (bannedNow) { try { sessionStorage.setItem('tfc-unbanned', '1'); } catch {} location.reload(); }
+    return false;
+  }
   showBanned(data.reason);
   return true;
 }
@@ -1123,6 +1126,7 @@ async function unbanUser(uid, name) {
   refreshAfterBan(uid);
 }
 function refreshAfterBan(uid) {
+  sb.functions.invoke('chat-push', {body: {action: 'ban-notice', target: uid}}).catch(() => {});   // tells their phone
   const dlg = $('#userDlg');
   if (dlg.open && dlg.dataset.uid === uid) renderUser(uid, knownPeople().get(uid));
   if (filter.kind === 'players') render();
@@ -2137,6 +2141,7 @@ if (!window.supabase) {
   });
   loadClips();
   if (new URLSearchParams(location.search).has('chat')) setFilter('chat');   // opened from a chat notification
+  try { if (sessionStorage.getItem('tfc-unbanned')) { sessionStorage.removeItem('tfc-unbanned'); toast('✅ You have been unbanned. Welcome back!'); } } catch {}
   window.addEventListener('message', e => {
     if (typeof e.data === 'string' && e.data.startsWith('tfc-bg-on')) {
       document.documentElement.classList.add('bg-on');
