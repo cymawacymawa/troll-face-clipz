@@ -245,7 +245,12 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .vvolbtn svg{width:18px;height:18px}
 .vvol{-webkit-appearance:none;appearance:none;width:64px;height:4px;border-radius:4px;background:linear-gradient(to right,var(--acc) var(--v,100%),rgba(255,255,255,.2) var(--v,100%));cursor:pointer}
 .vvol::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;border:none}
-.chatform input{flex:1}
+.chatform{align-items:flex-end}
+.chatform input,.chatform textarea{flex:1}
+/* the chat box grows onto new lines (up to ~7), then scrolls */
+.chatform .imgbtn{height:40px}
+.chatform #micBtn,.chatform #chatSend{height:40px}
+#chatInput{resize:none;min-height:40px;max-height:168px;overflow-y:hidden;line-height:1.45;padding:9px 10px;display:block}
 .chat-empty{margin:auto;text-align:center;color:var(--muted)}
 .storagebox{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:6px}
 .sbar{height:8px;background:var(--panel2);border-radius:6px;overflow:hidden}
@@ -453,7 +458,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
         <div id="mentionPop" class="mpop" role="listbox" aria-label="Mention a player" hidden></div>
         <button type="button" id="imgBtn" class="imgbtn" title="Add pictures (or paste with Ctrl+V, or drop them here)" aria-label="Add pictures"></button>
         <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden>
-        <input type="text" id="chatInput" maxlength="500" placeholder="Say something… type @ to mention someone (Enter to send)" autocomplete="off" aria-label="Chat message">
+        <textarea id="chatInput" rows="1" maxlength="2000" placeholder="Say something… type @ to mention someone (Enter to send)" autocomplete="off" aria-label="Chat message"></textarea>
         <div id="recBar" class="recbar" hidden><span class="recdot"></span><span id="recTime">0:00</span><span class="muted small">Recording… click Send when you're done</span></div>
         <button type="button" id="recCancel" class="danger" title="Cancel recording" hidden>✕</button>
         <button type="button" id="micBtn" title="Record a voice message (up to 60 seconds)" aria-label="Record a voice message"></button>
@@ -1846,6 +1851,23 @@ function startReply(m) {
 function clearReply() { replyTo = null; $('#replyBar').hidden = true; }
 $('#replyX').onclick = clearReply;
 $('#chatInput').addEventListener('keydown', e => { if (e.key === 'Escape' && replyTo) { clearReply(); e.stopPropagation(); } });
+/* Long messages: the box grows onto new lines. Enter sends, Shift+Enter makes a new line. */
+const CHAT_MAX = 2000;
+function sizeChatInput() {
+  const t = $('#chatInput');
+  t.style.height = 'auto';
+  const h = Math.min(t.scrollHeight + 2, 168);
+  t.style.height = h + 'px';
+  t.style.overflowY = t.scrollHeight + 2 > 168 ? 'auto' : 'hidden';
+  const n = t.value.length;
+  if (n > CHAT_MAX - 200) $('#chatMsg').textContent = n + ' / ' + CHAT_MAX;
+  else if (/^\d+ \/ \d+$/.test($('#chatMsg').textContent)) $('#chatMsg').textContent = '';
+}
+$('#chatInput').addEventListener('input', sizeChatInput);
+$('#chatInput').addEventListener('keydown', e => {
+  if (e.defaultPrevented || e.isComposing) return;   // the @mention list used Enter
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#chatForm').requestSubmit(); }
+});
 // Sends one chat message (as a reply when the reply bar is open). Works before replies.sql too.
 async function insertMessage(body) {
   const row = {user_id: session.user.id, body};
@@ -2054,9 +2076,14 @@ $('#chatForm').addEventListener('submit', async e => {
   try {
     if (body) {
       const {data, error} = await insertMessage(body);
-      if (error) { $('#chatMsg').textContent = /Slow down/i.test(error.message) ? 'Slow down! One message per second.' : 'Could not send: ' + error.message; return; }
+      if (error) {
+        $('#chatMsg').textContent = /Slow down/i.test(error.message) ? 'Slow down! One message per second.'
+          : /body_check|check constraint/i.test(error.message) ? 'That message is too long for the server right now (max 500 characters).'
+          : 'Could not send: ' + error.message;
+        return;
+      }
       pushToPhones(data);
-      inp.value = '';
+      inp.value = ''; sizeChatInput();
       sendTyping('idle', true);
       if (!chat.some(x => x.id === data.id)) { await ensurePeople([data.user_id]); const prev = chat[chat.length - 1]; chat.push(data); appendMsg(data, prev); }
     }
