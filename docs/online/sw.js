@@ -15,15 +15,16 @@ self.addEventListener('push', e => {
   }));
 });
 
-// Tap the notification: open the app (or switch to it) on the chat.
+// Tap the notification: open the app (or switch to it) on the chat, or on the clip it's about.
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const url = new URL((e.notification.data && e.notification.data.url) || './index.html?chat', self.registration.scope).href;
+  const clip = new URL(url).hash.slice(1);
   e.waitUntil((async () => {
     const wins = await self.clients.matchAll({type: 'window', includeUncontrolled: true});
     for (const w of wins) {
       if (w.url.startsWith(self.registration.scope)) {
-        w.postMessage('tfc-open-chat');
+        w.postMessage(clip ? 'tfc-open-clip:' + clip : 'tfc-open-chat');
         return w.focus();
       }
     }
