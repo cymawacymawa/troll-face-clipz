@@ -125,6 +125,14 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .btitle::after{color:#f0f;animation:bglitch2 2.7s steps(1) infinite 1.2s}
 #banned .breason{position:relative;margin:0;font-size:clamp(17px,3.2vw,24px);overflow-wrap:anywhere;white-space:pre-wrap;opacity:0;animation:bfadeup .6s ease-out 1.15s both}
 #banned .breason b{color:#ff8fa3;font-weight:700}
+#banned .bpic{display:block;margin:22px auto 0;max-width:min(520px,86vw);max-height:42vh;border-radius:14px;border:2px solid rgba(255,42,74,.7);
+  box-shadow:0 0 24px rgba(255,42,74,.55),0 0 70px rgba(255,42,74,.25);opacity:0;animation:bpicin .7s cubic-bezier(.2,1.4,.4,1) 1.4s both}
+#banned .bpic[hidden]{display:none}
+@keyframes bpicin{0%{opacity:0;transform:scale(.6) rotate(-4deg)}100%{opacity:1;transform:none}}
+.banthumb{margin-top:6px;max-width:180px;max-height:120px;border-radius:8px;border:1px solid var(--red);object-fit:cover}
+.bnpic{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bnpic img{width:96px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.bnpic img[hidden]{display:none}
 @keyframes bhammer{0%{opacity:0;transform:translate(-50%,-260px) rotate(-75deg)}25%{opacity:1}50%{transform:translate(-50%,40px) rotate(25deg)}62%{transform:translate(-50%,10px) rotate(8deg)}100%{opacity:0;transform:translate(-50%,0) rotate(12deg)}}
 @keyframes bring{0%{opacity:1;transform:scale(.2)}100%{opacity:0;transform:scale(28)}}
 @keyframes bflash{0%{opacity:.85}100%{opacity:0}}
@@ -135,7 +143,7 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 @keyframes bfadeup{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:none}}
 @keyframes bglitch1{0%,82%,100%{opacity:0;transform:none;clip-path:none}84%{opacity:.9;transform:translate(-6px,2px);clip-path:inset(10% 0 55% 0)}88%{opacity:.9;transform:translate(5px,-2px);clip-path:inset(60% 0 8% 0)}92%{opacity:0}}
 @keyframes bglitch2{0%,76%,100%{opacity:0;transform:none;clip-path:none}78%{opacity:.85;transform:translate(6px,-1px);clip-path:inset(35% 0 35% 0)}83%{opacity:.85;transform:translate(-4px,3px);clip-path:inset(0 0 70% 0)}87%{opacity:0}}
-@media (prefers-reduced-motion:reduce){#banned *,#banned{animation:none!important}.btitle,#banned .breason{opacity:1}}
+@media (prefers-reduced-motion:reduce){#banned *,#banned{animation:none!important}.btitle,#banned .breason,#banned .bpic{opacity:1}}
 .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700}
 #chat{display:flex;flex-direction:column;gap:10px;height:calc(100vh - 260px);min-height:280px}
 #chat[hidden]{display:none}
@@ -569,6 +577,14 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
   <form class="db" id="bnForm">
     <div class="small muted">They can still use the clipper, but Clipz Online will only show "You have been banned" with this reason. You can unban them any time from their profile.</div>
     <label class="f">Reason <textarea id="bnReason" maxlength="300" placeholder="Why are they banned?"></textarea></label>
+    <div class="f"><span class="small muted">Picture on their ban screen (optional)</span>
+      <div class="bnpic">
+        <img id="bnPicImg" alt="" hidden>
+        <button type="button" id="bnPicPick">🖼 Add picture</button>
+        <button type="button" id="bnPicDel" class="danger" hidden>Remove</button>
+        <input type="file" id="bnPicFile" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden>
+      </div>
+    </div>
     <div class="row"><span id="bnMsg" class="small muted"></span><div class="spacer"></div><button type="button" id="bnCancel">Cancel</button><button type="submit" class="danger" id="bnGo">🚫 Ban</button></div>
   </form>
 </dialog>
@@ -584,6 +600,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
     <div class="bring" aria-hidden="true"></div><div class="bring r2" aria-hidden="true"></div>
     <h1 class="btitle" data-text="YOU HAVE BEEN BANNED">YOU HAVE BEEN BANNED</h1>
     <p class="breason"><b>Reason:</b> <span id="banReason"></span></p>
+    <img class="bpic" id="banPic" alt="" hidden>
   </div>
 </div>
 
@@ -1153,7 +1170,8 @@ function renderUser(uid, p) {
   const joined = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'}) : '–';
   const actions = h('div', {class: 'row'});
   const ban = bans.get(uid), iAmOwner = !!(session && session.user.id === OWNER_ID);
-  if (iAmOwner && !isMe && ban) actions.append(h('div', {class: 'banline'}, h('b', {text: '🚫 Banned'}), h('span', {text: ban.reason ? 'Reason: ' + ban.reason : 'No reason given'})));
+  if (iAmOwner && !isMe && ban) actions.append(h('div', {class: 'banline'}, h('b', {text: '🚫 Banned'}), h('span', {text: ban.reason ? 'Reason: ' + ban.reason : 'No reason given'}),
+    ban.image_path ? h('img', {class: 'banthumb', src: pub(ban.image_path), alt: 'Ban picture'}) : null));
   if (isMe) actions.append(h('button', {text: '✏ Edit profile', onclick: () => { dlg.close(); openProfile(); }}));
   else if (session && me) actions.append(h('button', {class: 'primary', text: '@ Mention in chat', onclick: () => { dlg.close(); mentionInChat(p.username); }}));
   if (!isMe && iAmOwner) {
@@ -1184,18 +1202,24 @@ $('#uClose').onclick = () => $('#userDlg').close();
 /* ---------- bans ----------
    The owner bans from a player's profile (with a reason). The server locks banned players out
    of chat, reactions, likes and posting; this page just shows them "You have been banned". */
-const bans = new Map();   // uid -> {reason}; filled for the owner only
-let bannedNow = false, banChannel = null;
+const bans = new Map();   // uid -> {reason, image_path}; filled for the owner only
+let bannedNow = false, banChannel = null, hasBanPicCol = true;   // false until ban-picture.sql is run
+// select from bans, with the picture column when the server has it
+async function banSelect(cols, build) {
+  let r = await build(sb.from('bans').select(cols + (hasBanPicCol ? ',image_path' : '')));
+  if (r.error && /image_path/i.test(r.error.message)) { hasBanPicCol = false; r = await build(sb.from('bans').select(cols)); }
+  return r;
+}
 async function loadBans() {
   if (!sb || !session || session.user.id !== OWNER_ID) { bans.clear(); return; }
-  const {data, error} = await sb.from('bans').select('user_id,reason');
+  const {data, error} = await banSelect('user_id,reason', q => q);
   if (error) return;   // bans.sql not run yet
-  bans.clear(); data.forEach(b => bans.set(b.user_id, {reason: b.reason}));
+  bans.clear(); data.forEach(b => bans.set(b.user_id, {reason: b.reason, image_path: b.image_path || null}));
 }
 // Returns true (and shows the ban screen) when the signed-in player is banned.
 async function checkBan() {
   if (!sb || !session) return false;
-  const {data, error} = await sb.from('bans').select('reason,banned_at').eq('user_id', session.user.id).maybeSingle();
+  const {data, error} = await banSelect('reason,banned_at', q => q.eq('user_id', session.user.id).maybeSingle());
   watchBan();
   if (error || !data) {   // unbanned: back to normal
     if (bannedNow) { try { sessionStorage.setItem('tfc-unbanned', '1'); } catch {} location.reload(); }
@@ -1207,7 +1231,7 @@ async function checkBan() {
     if (IS_WEB && seen !== String(data.banned_at)) playSfx('ban.mp3', 0.8);
     try { localStorage.setItem('tfc-ban-seen', String(data.banned_at)); } catch {}
   }
-  showBanned(data.reason);
+  showBanned(data.reason, data.image_path);
   return true;
 }
 // Sound effects that live next to this page (ban.mp3 / unban.mp3). Missing file = no sound.
@@ -1259,10 +1283,16 @@ function startBanFx() {
   };
   requestAnimationFrame(tick);
 }
-function showBanned(reason) {
-  if (bannedNow && !$('#banned').hidden) { $('#banReason').textContent = reason || 'No reason given'; return; }
+function setBanPic(path) {
+  const img = $('#banPic');
+  if (path) { img.src = pub(path); img.hidden = false; img.onerror = () => { img.hidden = true; }; }
+  else { img.hidden = true; img.removeAttribute('src'); }
+}
+function showBanned(reason, picPath) {
+  if (bannedNow && !$('#banned').hidden) { $('#banReason').textContent = reason || 'No reason given'; setBanPic(picPath); return; }
   bannedNow = true;
   $('#banReason').textContent = reason || 'No reason given';
+  setBanPic(picPath);
   document.querySelectorAll('dialog[open]').forEach(d => d.close());
   HTMLDialogElement.prototype.showModal = function () {};   // nothing can pop up over it
   try { stopChatLive(); } catch {}
@@ -1279,30 +1309,62 @@ function watchBan() {
     .on('postgres_changes', {event: '*', schema: 'public', table: 'bans'}, () => { if (session) checkBan(); })
     .subscribe();
 }
-let banFor = null;
+let banFor = null, banPic = null;   // banPic = {blob, url} waiting to be uploaded
+function setBanPicPreview(p) {
+  if (banPic) URL.revokeObjectURL(banPic.url);
+  banPic = p;
+  $('#bnPicImg').hidden = !p; if (p) $('#bnPicImg').src = p.url; else $('#bnPicImg').removeAttribute('src');
+  $('#bnPicDel').hidden = !p;
+  $('#bnPicPick').textContent = p ? '🖼 Change picture' : '🖼 Add picture';
+}
 function openBan(uid, name) {
   banFor = {uid, name};
   $('#bnTitle').textContent = 'Ban ' + name;
   $('#bnReason').value = ''; $('#bnMsg').textContent = '';
+  setBanPicPreview(null);
   $('#banDlg').showModal(); $('#bnReason').focus();
 }
 $('#bnClose').onclick = $('#bnCancel').onclick = () => $('#banDlg').close();
+$('#bnPicPick').onclick = () => $('#bnPicFile').click();
+$('#bnPicDel').onclick = () => setBanPicPreview(null);
+$('#bnPicFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { const j = await toChatJpeg(f); setBanPicPreview({blob: j.blob, url: URL.createObjectURL(j.blob)}); }
+  catch (err) { $('#bnMsg').textContent = errMsg(err); }
+};
 $('#bnForm').addEventListener('submit', async e => {
   e.preventDefault();
   if (!banFor) return;
   const reason = $('#bnReason').value.trim(), go = $('#bnGo');
   go.disabled = true; $('#bnMsg').textContent = 'Banning…';
+  let picPath = null;
   try {
-    const {error} = await sb.from('bans').upsert({user_id: banFor.uid, reason});
-    if (error) { $('#bnMsg').textContent = /bans|schema cache|does not exist/i.test(error.message) ? 'Run bans.sql in Supabase first.' : error.message; return; }
-    bans.set(banFor.uid, {reason});
-    $('#banDlg').close(); toast(banFor.name + ' is banned from Clipz Online.');
+    if (banPic) {
+      if (!hasBanPicCol) { $('#bnMsg').textContent = 'Run ban-picture.sql in Supabase first (or remove the picture).'; return; }
+      picPath = `${session.user.id}/ban-${banFor.uid}-${crypto.randomUUID()}.jpg`;
+      const up = await sb.storage.from(BUCKET).upload(picPath, banPic.blob, {contentType: 'image/jpeg'});
+      if (up.error) { picPath = null; $('#bnMsg').textContent = 'Could not upload the picture: ' + up.error.message; return; }
+    }
+    const row = {user_id: banFor.uid, reason};
+    if (hasBanPicCol) row.image_path = picPath;
+    const {error} = await sb.from('bans').upsert(row);
+    if (error) {
+      if (picPath) sb.storage.from(BUCKET).remove([picPath]);
+      $('#bnMsg').textContent = /image_path/i.test(error.message) ? 'Run ban-picture.sql in Supabase first (or remove the picture).'
+        : /bans|schema cache|does not exist/i.test(error.message) ? 'Run bans.sql in Supabase first.' : error.message;
+      return;
+    }
+    bans.set(banFor.uid, {reason, image_path: picPath});
+    $('#banDlg').close(); setBanPicPreview(null); toast(banFor.name + ' is banned from Clipz Online.');
     refreshAfterBan(banFor.uid);
   } finally { go.disabled = false; }
 });
 async function unbanUser(uid, name) {
+  const old = bans.get(uid);
   const {error} = await sb.from('bans').delete().eq('user_id', uid);
   if (error) { toast('Could not unban: ' + error.message, true); return; }
+  if (old && old.image_path) sb.storage.from(BUCKET).remove([old.image_path]);   // the ban picture isn't needed anymore
   bans.delete(uid); toast(name + ' is unbanned.');
   refreshAfterBan(uid);
 }
