@@ -65,6 +65,17 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .pwdots{flex:1;letter-spacing:3px;color:var(--muted)}
 .pwform{display:flex;flex-direction:column;gap:10px;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
 .pwform input{background:var(--panel)}
+/* ⭐ highlight + clip reactions */
+.hlbadge{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.78);color:#ffd84a;padding:1px 7px;border-radius:6px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.hlrow{display:flex;align-items:center;gap:10px}
+.hltrack{position:relative;flex:1;height:10px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);cursor:pointer}
+.hlplay{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:6px;background:rgba(215,255,58,.35)}
+.hlmark{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#ffd84a;box-shadow:0 0 0 3px rgba(255,216,74,.3),0 0 12px rgba(255,216,74,.7)}
+.hlrow button{white-space:nowrap}
+.crx{display:inline-flex;gap:4px;margin-right:6px}
+.crx:empty{display:none}
+.prx .rx.addclip{opacity:1;color:var(--muted)}
+.prx .rx.addclip:hover{color:var(--text)}
 .pushbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--acc);border-radius:12px;background:rgba(215,255,58,.07);font-size:13px}
 .pushbar button{padding:5px 11px}
 /* bans */
@@ -488,6 +499,10 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
   <div class="dh"><h3 id="pTitle"></h3><button id="pClose" aria-label="Close">✕</button></div>
   <div class="db">
     <video id="pVideo" controls playsinline></video>
+    <div id="pHlRow" class="hlrow" hidden>
+      <div class="hltrack" id="pHlTrack" title="Click to jump"><span class="hlplay" id="pHlPlay"></span><span class="hlmark" id="pHlMark" title="Highlight"></span></div>
+      <button id="pHlBtn">⭐ Jump to highlight</button>
+    </div>
     <div class="row">
       <div class="byline" id="pBy" style="font-size:13px"></div>
       <div class="spacer"></div>
@@ -496,6 +511,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
       <button id="pDl">⬇ Download</button>
       <button id="pDel" class="danger" hidden>Delete</button>
     </div>
+    <div id="pRxBox"></div>
     <div id="pCaption" class="caption"></div>
     <div id="pShareBox" hidden>
       <div class="small muted">Link to this clip:</div>
@@ -591,10 +607,13 @@ const siteUrl = () => location.protocol.startsWith('http') ? location.origin + l
 const errMsg = e => (e && (e.message || e.error_description)) || String(e);
 
 /* ---------- data ---------- */
+let hasHighlightCol = true;   // false until clip-extras.sql adds clips.highlight
 async function loadClips() {
-  const {data, error} = await sb.from('clips')
-    .select('id,user_id,title,caption,video_path,thumb_path,duration,size,mime,created_at,profiles!clips_user_id_fkey(username,face),likes(count)')
+  const q = cols => sb.from('clips')
+    .select('id,user_id,title,caption,video_path,thumb_path,duration,size,mime,created_at,' + cols + 'profiles!clips_user_id_fkey(username,face),likes(count)')
     .order('created_at', {ascending: false}).limit(300);
+  let {data, error} = await q(hasHighlightCol ? 'highlight,' : '');
+  if (error && /highlight/i.test(error.message)) { hasHighlightCol = false; ({data, error} = await q('')); }
   loaded = true;
   if (error) {
     showNotice(/Could not find the table|relation .* does not exist/i.test(error.message)
@@ -603,9 +622,43 @@ async function loadClips() {
   }
   showNotice('');
   clips = data.map(c => ({...c, likeCount: (c.likes && c.likes[0] && c.likes[0].count) || 0}));
+  await loadClipReactions(clips.map(c => c.id));
   loadStorage();
   render(); openFromHash();
   if (current) { const fresh = clips.find(c => c.id === current.id); if (fresh) { current = fresh; updateLike(); } }
+}
+/* Auto refresh: new or deleted clips, likes and reactions show up by themselves (live, via
+   clip-extras.sql). If live updates aren't available, it checks every 60 seconds instead. */
+let clipsLive = null, clipsPoll = null, clipsReloadT = null;
+function reloadClipsSoon(ms) { clearTimeout(clipsReloadT); clipsReloadT = setTimeout(() => { if (!busy) loadClips(); }, ms || 1200); }
+function startClipsLive() {
+  if (!sb || clipsLive) return;
+  const poll = on => { clearInterval(clipsPoll); clipsPoll = on ? setInterval(() => { if (document.visibilityState === 'visible') reloadClipsSoon(10); }, 60000) : null; };
+  poll(true);
+  clipsLive = sb.channel('clips-live')
+    .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'clips'}, () => reloadClipsSoon(1500))
+    .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'clips'}, () => reloadClipsSoon(1500))
+    .on('postgres_changes', {event: 'DELETE', schema: 'public', table: 'clips'}, ({old}) => {
+      if (!old || !old.id) return reloadClipsSoon();
+      clips = clips.filter(c => c.id !== old.id); render();
+      if (current && current.id === old.id) { closePlayer(); toast('That clip was deleted.'); }
+    })
+    .on('postgres_changes', {event: '*', schema: 'public', table: 'likes'}, ({eventType, new: n, old: o}) => {
+      const row = eventType === 'DELETE' ? o : n, c = row && clips.find(x => x.id === row.clip_id);
+      if (!c) return;
+      if (session && row.user_id === session.user.id) return;   // my own like: already counted
+      c.likeCount = Math.max(0, c.likeCount + (eventType === 'DELETE' ? -1 : 1));
+      render(); if (current && current.id === c.id) updateLike();
+    })
+    .on('postgres_changes', {event: '*', schema: 'public', table: 'clip_reactions'}, ({eventType, new: n, old: o}) => {
+      const r = eventType === 'DELETE' ? o : n;
+      if (!r || !r.clip_id) return;
+      const list = clipReactions.get(r.clip_id) || [];
+      if (eventType === 'DELETE') clipReactions.set(r.clip_id, list.filter(x => !(x.user_id === r.user_id && x.emoji === r.emoji)));
+      else if (!list.some(x => x.user_id === r.user_id && x.emoji === r.emoji)) clipReactions.set(r.clip_id, [...list, {user_id: r.user_id, emoji: r.emoji}]);
+      refreshClipReactions(r.clip_id);
+    })
+    .subscribe(status => poll(status !== 'SUBSCRIBED'));
 }
 async function loadMine() {
   me = null; myLikes = new Set();
@@ -784,11 +837,14 @@ function clipCard(c) {
   const p = c.profiles || {};
   const name = h('b', {text: p.username || 'Unknown player', title: 'Open profile', onclick: e => { e.stopPropagation(); openUser(c.user_id); }});
   return h('article', {class: 'card', tabindex: '0', onclick: () => openClip(c), onkeydown: e => { if (e.key === 'Enter') openClip(c); }},
-    h('div', {class: 'thumb', style: c.thumb_path ? `background-image:url("${pub(c.thumb_path)}")` : ''}, h('span', {class: 'dur', text: fmtTime(c.duration)})),
+    h('div', {class: 'thumb', style: c.thumb_path ? `background-image:url("${pub(c.thumb_path)}")` : ''},
+      c.highlight != null ? h('span', {class: 'hlbadge', title: 'Has a highlight at ' + fmtTime(c.highlight), text: '⭐ ' + fmtTime(c.highlight)}) : null,
+      h('span', {class: 'dur', text: fmtTime(c.duration)})),
     h('div', {class: 'cbody'},
       h('div', {class: 'ctrow'}, h('div', {class: 'ctitle', text: c.title || 'Untitled clip'}), notFromTFC(c) ? infoBadge() : null),
       h('div', {class: 'byline'}, faceEl(c.user_id, p.face), name,
-        h('span', {text: '· ' + ago(c.created_at)}), h('span', {class: 'likes', text: '♥ ' + c.likeCount}))));
+        h('span', {text: '· ' + ago(c.created_at)}),
+        h('span', {class: 'likes'}, cardReactSummary(c.id), h('span', {text: '♥ ' + c.likeCount})))));
 }
 /* ---------- server storage ----------
    Supabase free plan: 1 GB for files (clips, thumbnails, pictures, shared links) and
@@ -1355,7 +1411,7 @@ function mostUsed(n) {
   for (const e of REACT_EMOJIS) if (!top.includes(e)) top.push(e);   // fill up with the defaults
   return top.slice(0, n);
 }
-function pickEmoji(mid, e) { closeReactPicker(); countEmoji(e); toggleReaction(mid, e); }
+function pickEmoji(mid, e, fn) { closeReactPicker(); countEmoji(e); (fn || toggleReaction)(mid, e); }
 function placePopup(pop, anchor) {
   document.body.append(pop);
   const a = anchor.getBoundingClientRect(), w = pop.offsetWidth, ph = pop.offsetHeight;
@@ -1363,18 +1419,19 @@ function placePopup(pop, anchor) {
   pop.style.top = (a.top - ph - 6 > 8 ? a.top - ph - 6 : Math.min(innerHeight - ph - 8, a.bottom + 6)) + 'px';
 }
 // Quick row: your 6 most used + a "+" that opens every emoji.
-function openReactPicker(mid, anchor) {
+// (fn = what a pick does: chat-message reactions by default, or clip reactions)
+function openReactPicker(mid, anchor, fn) {
   closeReactPicker();
   const pop = h('div', {class: 'rpick', id: 'reactPicker', role: 'menu'},
-    ...mostUsed(6).map(e => h('button', {type: 'button', text: e, title: 'React with ' + e, onclick: () => pickEmoji(mid, e)})),
-    h('button', {type: 'button', class: 'rmore', title: 'All emojis', 'aria-label': 'All emojis', text: '+', onclick: e => { e.stopPropagation(); openEmojiPanel(mid, anchor); }}));
+    ...mostUsed(6).map(e => h('button', {type: 'button', text: e, title: 'React with ' + e, onclick: () => pickEmoji(mid, e, fn)})),
+    h('button', {type: 'button', class: 'rmore', title: 'All emojis', 'aria-label': 'All emojis', text: '+', onclick: e => { e.stopPropagation(); openEmojiPanel(mid, anchor, fn); }}));
   placePopup(pop, anchor);
 }
 // The big one: Most used, Castiel's special, then every emoji by category.
-function openEmojiPanel(mid, anchor) {
+function openEmojiPanel(mid, anchor, fn) {
   closeReactPicker();
   const section = (title, list, cls) => [h('div', {class: 'eph' + (cls ? ' ' + cls : ''), text: title}),
-    h('div', {class: 'epg'}, ...list.map(e => h('button', {type: 'button', text: e, title: e, onclick: () => pickEmoji(mid, e)})))];
+    h('div', {class: 'epg'}, ...list.map(e => h('button', {type: 'button', text: e, title: e, onclick: () => pickEmoji(mid, e, fn)})))];
   const body = h('div', {class: 'epbody'},
     ...section('Most used', mostUsed(16)),
     ...section('💕 Castiel\'s special', ['🏩'], 'special'),
@@ -1396,6 +1453,67 @@ const EMOJI_CATS = [
   ['Flags', '🏁🚩🎌🏴🏳️🏳️‍🌈🏳️‍⚧️🏴‍☠️🇩🇪🇦🇹🇨🇭🇺🇸🇬🇧🇫🇷🇪🇸🇮🇹🇳🇱🇵🇱🇹🇷🇺🇦🇷🇺🇯🇵🇰🇷🇨🇳🇧🇷🇲🇽🇨🇦🇦🇺🇮🇳🇪🇺'],
 ];
 function closeReactPicker() { const p = document.getElementById('reactPicker'); if (p) p.remove(); }
+
+/* ---------- reactions on clips ----------
+   Same idea as chat reactions: under the video in the player, click 😀 React to add one,
+   click a reaction to add/remove yours. Cards show the top 3. Needs clip-extras.sql. */
+let clipReactionsReady = true;
+const clipReactions = new Map();   // clip id -> [{user_id, emoji}]
+async function loadClipReactions(ids) {
+  if (!ids.length || !clipReactionsReady) return;
+  const {data, error} = await sb.from('clip_reactions').select('clip_id,user_id,emoji').in('clip_id', ids);
+  if (error) { if (/does not exist|Could not find the table/i.test(error.message)) clipReactionsReady = false; return; }
+  ids.forEach(id => clipReactions.set(id, []));
+  (data || []).forEach(r => clipReactions.get(r.clip_id).push({user_id: r.user_id, emoji: r.emoji}));
+}
+const groupReactions = list => {
+  const g = new Map();
+  for (const r of list) { if (!g.has(r.emoji)) g.set(r.emoji, []); g.get(r.emoji).push(r.user_id); }
+  return [...g].sort((a, b) => b[1].length - a[1].length);
+};
+function cardReactSummary(cid) {
+  const top = groupReactions(clipReactions.get(cid) || []).slice(0, 3);
+  return h('span', {class: 'crx', 'data-crx': cid}, ...top.map(([e, us]) => h('span', {text: e + (us.length > 1 ? us.length : '')})));
+}
+function clipReactionRow(cid) {
+  const row = h('div', {class: 'rxns prx', 'data-prx': cid});
+  if (!clipReactionsReady) return row;
+  const people = knownPeople();
+  for (const [emoji, users] of groupReactions(clipReactions.get(cid) || [])) {
+    const mine = session && users.includes(session.user.id);
+    const names = users.map(u => (people.get(u) || {}).username || 'Someone');
+    row.append(h('button', {class: 'rx' + (mine ? ' mine' : ''), title: names.join(', ') + ' reacted with ' + emoji,
+      onclick: () => toggleClipReaction(cid, emoji)}, h('span', {text: emoji}), h('b', {text: String(users.length)})));
+  }
+  row.append(h('button', {class: 'rx addclip', title: 'React to this clip', text: '😀 React', onclick: e => { e.stopPropagation(); openReactPicker(cid, e.currentTarget, toggleClipReaction); }}));
+  return row;
+}
+function refreshClipReactions(cid) {
+  const old = document.querySelector(`.prx[data-prx="${cid}"]`);
+  if (old) old.replaceWith(clipReactionRow(cid));
+  document.querySelectorAll(`.crx[data-crx="${cid}"]`).forEach(el => el.replaceWith(cardReactSummary(cid)));
+}
+async function toggleClipReaction(cid, emoji) {
+  if (!session || !me) { toast('Sign in to react.', true); return; }
+  const list = clipReactions.get(cid) || [];
+  const uid = session.user.id, had = list.some(r => r.user_id === uid && r.emoji === emoji);
+  clipReactions.set(cid, had ? list.filter(r => !(r.user_id === uid && r.emoji === emoji)) : [...list, {user_id: uid, emoji}]);
+  refreshClipReactions(cid);
+  const r = had ? await sb.from('clip_reactions').delete().eq('clip_id', cid).eq('user_id', uid).eq('emoji', emoji)
+                : await sb.from('clip_reactions').insert({clip_id: cid, user_id: uid, emoji});
+  if (r.error && !/duplicate/i.test(r.error.message)) {
+    clipReactions.set(cid, list); refreshClipReactions(cid);
+    toast(/does not exist|Could not find the table/i.test(r.error.message) ? 'Clip reactions aren\'t set up yet (run clip-extras.sql).' : 'Could not react: ' + r.error.message, true);
+    return;
+  }
+  if (!had) clipNotice(cid, 'reaction', emoji);   // tells the clip's owner (phone)
+}
+// Tells the clip's owner on their phone: "… liked your clip" / "… reacted 😂 to your clip".
+function clipNotice(cid, kind, emoji) {
+  const c = clips.find(x => x.id === cid);
+  if (!sb || !c || !session || c.user_id === session.user.id) return;
+  sb.functions.invoke('chat-push', {body: {action: 'clip-notice', clip_id: cid, kind, emoji: emoji || ''}}).catch(() => {});
+}
 document.addEventListener('click', e => { if (!e.target.closest('#reactPicker')) closeReactPicker(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReactPicker(); });
 document.addEventListener('scroll', e => { if (!(e.target.closest && e.target.closest('#reactPicker'))) closeReactPicker(); }, true);
@@ -2082,6 +2200,14 @@ function openClip(c) {
   $('#pBy').replaceChildren(faceEl(c.user_id, p.face), h('b', {text: p.username || 'Unknown player', title: 'Open profile', onclick: () => openUser(c.user_id)}),h('span', {text: '· ' + ago(c.created_at) + ' · ' + fmtTime(c.duration)}));
   $('#pCaption').textContent = c.caption || '';
   $('#pShareBox').hidden = true;
+  $('#pRxBox').replaceChildren(clipReactionRow(c.id));
+  // ⭐ highlight: a marker on a little timeline + a jump button
+  const hl = c.highlight != null && isFinite(c.highlight) ? +c.highlight : null;
+  $('#pHlRow').hidden = hl == null;
+  if (hl != null) {
+    $('#pHlBtn').textContent = '⭐ Jump to highlight (' + fmtTime(hl) + ')';
+    $('#pHlMark').style.left = Math.min(100, hl / Math.max(0.1, c.duration || hl + 1) * 100) + '%';
+  }
   const del = $('#pDel'); del.textContent = 'Delete'; delete del.dataset.armed; del.hidden = !(session && c.user_id === session.user.id);
   updateLike();
   if (location.hash !== '#' + c.id) history.replaceState(null, '', '#' + c.id);
@@ -2094,6 +2220,17 @@ function closePlayer() {
   history.replaceState(null, '', location.pathname + location.search);
 }
 $('#pClose').onclick = closePlayer;
+// ⭐ jump: start a moment before the highlight so you see it coming
+$('#pHlBtn').onclick = () => { if (!current || current.highlight == null) return; const v = $('#pVideo'); v.currentTime = Math.max(0, current.highlight - 1.5); v.play().catch(() => {}); };
+$('#pHlTrack').onclick = e => {
+  const v = $('#pVideo'), r = e.currentTarget.getBoundingClientRect(), d = (isFinite(v.duration) && v.duration) || (current && current.duration) || 0;
+  if (d) v.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * d;
+};
+$('#pVideo').addEventListener('timeupdate', () => {
+  const v = $('#pVideo'), d = (isFinite(v.duration) && v.duration) || (current && current.duration) || 0;
+  if (d) $('#pHlPlay').style.width = Math.min(100, v.currentTime / d * 100) + '%';
+  if (current && current.highlight != null && d) $('#pHlMark').style.left = Math.min(100, current.highlight / d * 100) + '%';
+});
 $('#playDlg').addEventListener('cancel', e => { e.preventDefault(); closePlayer(); });
 function updateLike() {
   if (!current) return;
@@ -2110,7 +2247,7 @@ $('#pLike').onclick = async () => {
                   : await sb.from('likes').insert({user_id: session.user.id, clip_id: c.id});
   liking = false;
   if (r.error) { toast('Could not save your like: ' + r.error.message, true); return; }
-  if (liked) { myLikes.delete(c.id); c.likeCount--; } else { myLikes.add(c.id); c.likeCount++; }
+  if (liked) { myLikes.delete(c.id); c.likeCount--; } else { myLikes.add(c.id); c.likeCount++; clipNotice(c.id, 'like'); }
   updateLike(); render();
 };
 $('#pShare').onclick = async () => {
@@ -2158,7 +2295,11 @@ const PUSH_OK = IS_WEB && 'serviceWorker' in navigator && 'PushManager' in windo
 let swReg = null, pushOn = false, pushBusy = false;
 if (IS_WEB && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(r => { swReg = r; refreshPush(); }).catch(() => {});
-  navigator.serviceWorker.addEventListener('message', e => { if (e.data === 'tfc-open-chat' && !bannedNow) setFilter('chat'); });
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (bannedNow || typeof e.data !== 'string') return;
+    if (e.data === 'tfc-open-chat') setFilter('chat');
+    if (e.data.startsWith('tfc-open-clip:')) { const id = e.data.slice(14); if (filter.kind !== 'all') setFilter('all'); location.hash = id; openFromHash(); }
+  });
 }
 // Called after each chat message you send: tells everyone's phones (desktop senders too).
 function pushToPhones(m) {
@@ -2289,6 +2430,7 @@ if (!window.supabase) {
     if (changed || event === 'INITIAL_SESSION') setTimeout(loadMine, 0);
   });
   loadClips();
+  startClipsLive();
   if (new URLSearchParams(location.search).has('chat')) setFilter('chat');   // opened from a chat notification
   try { if (sessionStorage.getItem('tfc-unbanned')) { sessionStorage.removeItem('tfc-unbanned'); toast('✅ You have been unbanned. Welcome back!'); if (IS_WEB) playSfx('unban.mp3', 0.25); } } catch {}
   window.addEventListener('message', e => {
