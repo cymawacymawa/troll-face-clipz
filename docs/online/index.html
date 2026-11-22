@@ -1413,9 +1413,11 @@ function mostUsed(n) {
 }
 function pickEmoji(mid, e, fn) { closeReactPicker(); countEmoji(e); (fn || toggleReaction)(mid, e); }
 function placePopup(pop, anchor) {
-  document.body.append(pop);
+  // Inside an open dialog (the clip player) it has to live in the dialog, or it ends up behind it.
+  (anchor.closest('dialog[open]') || document.body).append(pop);
   const a = anchor.getBoundingClientRect(), w = pop.offsetWidth, ph = pop.offsetHeight;
-  pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, a.right - w)) + 'px';
+  const want = a.right - w >= 8 ? a.right - w : a.left;   // right-aligned to the button, or left-aligned when there's no room
+  pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, want)) + 'px';
   pop.style.top = (a.top - ph - 6 > 8 ? a.top - ph - 6 : Math.min(innerHeight - ph - 8, a.bottom + 6)) + 'px';
 }
 // Quick row: your 6 most used + a "+" that opens every emoji.
