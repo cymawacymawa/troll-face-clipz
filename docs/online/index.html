@@ -75,6 +75,9 @@ html.mini .wrap{padding-left:8px;padding-right:8px}
 html.mini main{padding-block:6px 6px}
 html.mini #chat{height:calc(100vh - 54px)!important;min-height:0}
 html.mini body{overflow:hidden}
+/* 🔔 remind to update */
+.remind{align-self:flex-start;margin-top:4px;padding:4px 10px;font-size:12px;border-radius:999px;color:#ffd84a;border-color:rgba(255,216,74,.45);background:rgba(255,216,74,.08)}
+.remind:hover:not(:disabled){background:rgba(255,216,74,.18);border-color:#ffd84a}
 /* clip tags (app/game + "clipped with voice") */
 .ctags{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
 .ctag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:rgba(215,255,58,.12);color:var(--acc);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -841,6 +844,35 @@ async function loadPlayers() {
   if (filter.kind === 'players') render();
 }
 // "● Online now · v1.9.6" / "Last online 2 h ago · v1.9.5". The app checks in every 2 minutes.
+/* ---------- 🔔 remind to update ----------
+   On a newer version than someone else? Remind them: their app shows "… wants you to update
+   Troll Face Clipz" and checks for the update right away. Needs nudges.sql. */
+const verNum = v => /^\d+(\.\d+)*$/.test(String(v || '')) ? String(v).split('.').map(Number) : null;
+const verNewer = (a, b) => { for (let i = 0; i < Math.max(a.length, b.length); i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return d > 0; } return false; };
+function appVersionOf(uid, p) {   // the PC app's version (live room first, then the last check-in)
+  const live = livePresence && livePresence.get(uid);
+  const app = live && live.find(m => m.kind === 'app' && verNum(m.v));
+  return verNum(app ? app.v : p && p.app_version);
+}
+function canRemind(p) {
+  if (!session || !me || !p || p.id === session.user.id) return false;
+  const mine = appVersionOf(session.user.id, me), theirs = appVersionOf(p.id, p);
+  return !!(mine && theirs && verNewer(mine, theirs));
+}
+async function remindUpdate(p, btn) {
+  if (btn) btn.disabled = true;
+  const {error} = await sb.from('nudges').insert({to_id: p.id, kind: 'update'});
+  if (btn) btn.disabled = false;
+  if (error) {
+    toast(/Already reminded/i.test(error.message) ? 'You already reminded ' + p.username + ' in the last 10 minutes.'
+      : /nudges|schema cache|does not exist/i.test(error.message) ? 'Reminders aren\'t set up yet (run nudges.sql).' : 'Could not send: ' + error.message, true);
+    return;
+  }
+  toast('🔔 Sent! ' + p.username + ' gets a reminder to update.');
+}
+const remindBtn = p => canRemind(p)
+  ? h('button', {class: 'remind', title: 'They\'re on an older version: remind them to update', text: '🔔 Remind to update', onclick: e => { e.stopPropagation(); remindUpdate(p, e.currentTarget); }})
+  : null;
 const kindLabel = (kind, v) => kind === 'mobile' ? '📱 Mobile web' : kind === 'web' ? '🌐 Web' : v ? 'v' + v : '';
 function presenceLine(p) {
   // Live presence (see "live online" below) when it's connected; otherwise the 2-minute check-ins.
@@ -881,7 +913,8 @@ function renderPlayers(grid) {
         p.bio ? h('div', {class: 'pbio', text: p.bio}) : null,
         h('div', {class: 'muted small', text: `${p.clipCount} clip${p.clipCount === 1 ? '' : 's'} posted · joined ${new Date(p.created_at).toLocaleDateString()}`}),
         presenceLine(p),
-        bans.has(p.id) ? h('div', {class: 'small bantag', text: '🚫 Banned'}) : null)));
+        bans.has(p.id) ? h('div', {class: 'small bantag', text: '🚫 Banned'}) : null,
+        remindBtn(p))));
   }
 }
 
@@ -1212,6 +1245,7 @@ function renderUser(uid, p) {
     ban.image_path ? h('img', {class: 'banthumb', src: pub(ban.image_path), alt: 'Ban picture'}) : null));
   if (isMe) actions.append(h('button', {text: '✏ Edit profile', onclick: () => { dlg.close(); openProfile(); }}));
   else if (session && me) actions.append(h('button', {class: 'primary', text: '@ Mention in chat', onclick: () => { dlg.close(); mentionInChat(p.username); }}));
+  if (!isMe && canRemind({...p, id: uid})) actions.append(remindBtn({...p, id: uid}));
   if (!isMe && iAmOwner) {
     actions.append(h('button', {text: '🔑 Reset password', title: 'Owner only: set a new password for this player', onclick: () => openReset(uid, p.username)}));
     actions.append(ban
