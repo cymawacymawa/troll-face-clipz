@@ -2408,7 +2408,9 @@ function openClip(c) {
   $('#pShareBox').hidden = true;
   $('#pRxBox').replaceChildren(...[clipTags(c), clipReactionRow(c.id)].filter(Boolean));
   vcUpdate();   // ⭐ highlight marker on the seek bar
-  const del = $('#pDel'); del.textContent = 'Delete'; delete del.dataset.armed; del.hidden = !(session && c.user_id === session.user.id);
+  // your own clips, or anyone's for the owner (cymawacymawa)
+  const ownClip = !!(session && c.user_id === session.user.id), ownerDel = !!(session && session.user.id === OWNER_ID && !ownClip);
+  const del = $('#pDel'); del.textContent = ownerDel ? '🗑 Delete (owner)' : 'Delete'; delete del.dataset.armed; del.hidden = !(ownClip || ownerDel);
   updateLike();
   if (location.hash !== '#' + c.id) history.replaceState(null, '', '#' + c.id);
   if (!$('#playDlg').open) $('#playDlg').showModal();
@@ -2496,10 +2498,13 @@ $('#pDel').onclick = async () => {
   const b = $('#pDel'), c = current; if (!c) return;
   if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Click again to delete forever'; return; }
   b.disabled = true;
-  const r = await sb.from('clips').delete().eq('id', c.id);
-  if (!r.error) await sb.storage.from(BUCKET).remove([c.video_path, c.thumb_path].filter(Boolean));
+  const r = await sb.from('clips').delete().eq('id', c.id).select('id');
+  // the server says "OK, deleted nothing" when you're not allowed (someone else's clip before owner-delete.sql)
+  const gone = !r.error && r.data && r.data.length;
+  if (gone) await sb.storage.from(BUCKET).remove([c.video_path, c.thumb_path].filter(Boolean));
   b.disabled = false;
   if (r.error) { toast('Could not delete: ' + r.error.message, true); return; }
+  if (!gone) { toast(c.user_id !== session.user.id ? 'Not allowed yet: run owner-delete.sql in Supabase first.' : 'Could not delete this clip.', true); b.textContent = 'Delete'; delete b.dataset.armed; return; }
   closePlayer(); toast('Clip deleted.'); loadClips();
 };
 function openFromHash() {
