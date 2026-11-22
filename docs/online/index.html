@@ -2265,7 +2265,10 @@ function loadVideo(src, attach) {
     v.muted = true; v.preload = 'auto'; v.playsInline = true; v.crossOrigin = 'anonymous';
     if (attach) { v.style.cssText = 'position:fixed;left:-10000px;top:0;width:320px;height:180px'; document.body.append(v); }
     v.onloadedmetadata = async () => { await fixDuration(v); res(v); };
-    v.onerror = () => rej(new Error('This video can\'t be read here. Samsung: Camera settings → turn off "HDR10+ video" and "High efficiency video", then record again.'));
+    v.onerror = () => {
+      v.onerror = null; freeVideo(v); v.remove();   // don't keep a broken player holding the decoder
+      rej(new Error('This video can\'t be read here. Samsung: Camera settings → turn off "HDR10+ video" and "High efficiency video", then record again.'));
+    };
     v.src = src;
   });
 }
@@ -2280,15 +2283,28 @@ function fixDuration(v) {
   });
 }
 function seek(v, t) { return new Promise(res => { const hs = () => { v.removeEventListener('seeked', hs); res(); }; v.addEventListener('seeked', hs); v.currentTime = t; setTimeout(hs, 2500); }); }
+// Thumbnail (a frame at 40%) from a video that's already open.
+async function thumbFrom(v) {
+  const d = isFinite(v.duration) ? v.duration : 0;
+  await seek(v, Math.min(d * 0.4, Math.max(0, d - 0.1)));
+  const c = document.createElement('canvas'); c.width = 480; c.height = Math.round(480 * (v.videoHeight || 9) / (v.videoWidth || 16));
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  return {blob: await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8)), duration: d};
+}
 async function makeThumb(url) {
-  const v = await loadVideo(url);
-  try {
-    const d = isFinite(v.duration) ? v.duration : 0;
-    await seek(v, Math.min(d * 0.4, Math.max(0, d - 0.1)));
-    const c = document.createElement('canvas'); c.width = 480; c.height = Math.round(480 * (v.videoHeight || 9) / (v.videoWidth || 16));
-    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-    return {blob: await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8)), duration: d};
-  } finally { freeVideo(v); }
+  const v = await loadVideoRetry(url);
+  try { return await thumbFrom(v); } finally { freeVideo(v); }
+}
+// Phones free their video decoder a moment after the last video let go of it: wait and try again.
+async function loadVideoRetry(src, attach, tries = 4) {
+  for (let i = 1; ; i++) {
+    try { return await loadVideo(src, attach); }
+    catch (e) {
+      document.querySelectorAll('video[style*="-10000px"]').forEach(x => { if (!x.getAttribute('src')) x.remove(); });
+      if (i >= tries) throw e;
+      await new Promise(r => setTimeout(r, 700 * i));
+    }
+  }
 }
 const pickMime = () => ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
   .find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
@@ -2311,7 +2327,7 @@ const infoBadge = () => {
   return b;
 };
 async function shrink(file, duration, actx, onProgress) {
-  const url = URL.createObjectURL(file); const v = await loadVideo(url, true);
+  const url = URL.createObjectURL(file); const v = await loadVideoRetry(url, true);
   try {
     v.muted = false;
     const dest = actx.createMediaStreamDestination(); actx.createMediaElementSource(v).connect(dest);
@@ -2330,7 +2346,7 @@ async function shrink(file, duration, actx, onProgress) {
 }
 
 /* ---------- upload ---------- */
-let upFile = null, upDuration = 0, upUrl = null, busy = false;
+let upFile = null, upDuration = 0, upUrl = null, busy = false, upThumb = null;   // upThumb: made while picking (phones can't open the video again)
 $('#uploadBtn').onclick = () => {
   upFile = null; $('#upTitle').value = ''; $('#upCaption').value = ''; $('#upInfo').textContent = '';
   $('#upPreview').hidden = true; $('#upPreview').removeAttribute('src'); $('#dropTxt').hidden = false;
@@ -2359,7 +2375,12 @@ async function pickFile(f) {
   if (!type) { toast('That isn\'t a video. Pick or record a video.', true); return; }
   if (upUrl) URL.revokeObjectURL(upUrl);
   upUrl = URL.createObjectURL(f);
-  try { const v = await loadVideo(upUrl); upDuration = isFinite(v.duration) ? v.duration : 0; freeVideo(v); }
+  upThumb = null;
+  try {
+    const v = await loadVideo(upUrl); upDuration = isFinite(v.duration) ? v.duration : 0;
+    try { upThumb = await thumbFrom(v); } catch {}
+    freeVideo(v);
+  }
   catch (e) { toast('This video can\'t be played here. Samsung: Camera settings → turn off "HDR10+ video" and "High efficiency video". iPhone: Settings → Camera → Formats → "Most Compatible". Then record again.', true); return; }
   upFile = f.type === type ? f : new File([f], f.name, {type});
   const pv = $('#upPreview'); pv.src = upUrl; pv.hidden = false; $('#dropTxt').hidden = true;
@@ -2385,7 +2406,8 @@ $('#upPost').onclick = async () => {
       if (file.size > 50 * 1024 * 1024) throw new Error('Still over 50 MB after compressing. Trim it shorter in the Troll Face Clipz app.');
     }
     stage('Making thumbnail…', 0.62);
-    const fu = URL.createObjectURL(file); let th; try { th = await makeThumb(fu); } finally { URL.revokeObjectURL(fu); }
+    let th = upThumb;   // made while picking (the same picture, also for a compressed copy)
+    if (!th) { const fu = URL.createObjectURL(file); try { th = await makeThumb(fu); } catch { th = {blob: null, duration: upDuration}; } finally { URL.revokeObjectURL(fu); } }
     stage('Uploading video…', 0.68);
     vpath = `${uid}/${fromTFC ? 'tfc-' : ''}${id}.${file.type.includes('mp4') ? 'mp4' : 'webm'}`;
     let r = await sb.storage.from(BUCKET).upload(vpath, file, {contentType: file.type});
