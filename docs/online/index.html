@@ -582,7 +582,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
   <form class="db" id="bnForm">
     <div class="small muted">They can still use the clipper, but Clipz Online will only show "You have been banned" with this reason. You can unban them any time from their profile.</div>
     <label class="f">Reason <textarea id="bnReason" maxlength="300" placeholder="Why are they banned?"></textarea></label>
-    <div class="f"><span class="small muted">Picture on their ban screen (optional)</span>
+    <div class="f"><span class="small muted">Picture on their ban screen (optional) · or paste one with Ctrl+V</span>
       <div class="bnpic">
         <img id="bnPicImg" alt="" hidden>
         <button type="button" id="bnPicPick">🖼 Add picture</button>
@@ -1332,12 +1332,17 @@ function openBan(uid, name) {
 $('#bnClose').onclick = $('#bnCancel').onclick = () => $('#banDlg').close();
 $('#bnPicPick').onclick = () => $('#bnPicFile').click();
 $('#bnPicDel').onclick = () => setBanPicPreview(null);
-$('#bnPicFile').onchange = async e => {
-  const f = e.target.files[0]; e.target.value = '';
-  if (!f) return;
-  try { const j = await toChatJpeg(f); setBanPicPreview({blob: j.blob, url: URL.createObjectURL(j.blob)}); }
+async function useBanPicture(f) {
+  try { const j = await toChatJpeg(f); setBanPicPreview({blob: j.blob, url: URL.createObjectURL(j.blob)}); $('#bnMsg').textContent = ''; }
   catch (err) { $('#bnMsg').textContent = errMsg(err); }
-};
+}
+$('#bnPicFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) useBanPicture(f); };
+// Ctrl+V anywhere in the ban dialog (also in the reason box) pastes a copied picture
+$('#banDlg').addEventListener('paste', e => {
+  const f = [...(e.clipboardData && e.clipboardData.files || [])].find(x => /^image\//.test(x.type));
+  if (!f) return;   // plain text: paste it into the reason as normal
+  e.preventDefault(); useBanPicture(f);
+});
 $('#bnForm').addEventListener('submit', async e => {
   e.preventDefault();
   if (!banFor) return;
