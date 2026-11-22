@@ -65,6 +65,20 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .pwdots{flex:1;letter-spacing:3px;color:var(--muted)}
 .pwform{display:flex;flex-direction:column;gap:10px;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
 .pwform input{background:var(--panel)}
+/* replies */
+.rquote{display:flex;align-items:center;gap:6px;min-width:0;margin:0 0 2px;font-size:12px;color:var(--muted);cursor:pointer}
+.rquote .face{width:16px;height:16px;font-size:9px}
+.rquote b{color:var(--text);font-weight:600;flex:none}
+.rquote:hover .rqtext{color:var(--text)}
+.rqarrow{color:var(--muted);flex:none}
+.rqtext{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.replybar{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;background:var(--panel);font-size:13px;min-width:0}
+.replybar #replyText{flex:1;color:var(--muted)}
+.replybar button{padding:2px 8px;border:none;background:none;color:var(--muted)}
+.replybar button:hover:not(:disabled){color:var(--text);background:var(--panel2)}
+.msg.hasreply>.face{margin-top:22px}
+.msg.flash{animation:msgflash 1.6s ease-out}
+@keyframes msgflash{0%,30%{background:rgba(215,255,58,.22)}100%{background:transparent}}
 /* ⭐ highlight + clip reactions */
 .hlbadge{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.78);color:#ffd84a;padding:1px 7px;border-radius:6px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
 /* ⭐ highlight laid over Chromium's own video seek bar (measured in the app: the bar runs
@@ -74,7 +88,7 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .vhlzone{position:absolute;left:16px;right:16px;bottom:22px;height:0;pointer-events:none}
 .vhl{position:absolute;top:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#ffd84a;cursor:pointer;pointer-events:auto;
   box-shadow:0 0 0 2px rgba(0,0,0,.45),0 0 10px rgba(255,216,74,.9);transition:opacity .2s,transform .12s;opacity:0}
-.vhl::after{content:'⭐';position:absolute;left:50%;bottom:11px;transform:translateX(-50%);font-size:14px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+.vhl::after{content:'⭐';position:absolute;left:50%;bottom:19px;transform:translateX(-50%);font-size:14px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
 .vhl:hover{transform:scale(1.3)}
 .vwrap.ctl .vhl{opacity:1}
 .vwrap:not(.ctl) .vhl{pointer-events:none}
@@ -426,6 +440,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
       <div id="chatList" class="chatlist" aria-live="polite"></div>
       <div id="typingLine" class="typing" aria-live="polite"></div>
       <div id="attachTray" class="attachtray" hidden></div>
+      <div id="replyBar" class="replybar" hidden><span class="rqarrow">↩</span><span>Replying to <b id="replyName"></b></span><span id="replyText" class="rqtext"></span><button type="button" id="replyX" aria-label="Cancel reply" title="Cancel reply (Esc)">✕</button></div>
       <form id="chatForm" class="chatform">
         <div id="mentionPop" class="mpop" role="listbox" aria-label="Mention a player" hidden></div>
         <button type="button" id="imgBtn" class="imgbtn" title="Add pictures (or paste with Ctrl+V, or drop them here)" aria-label="Add pictures"></button>
@@ -890,7 +905,9 @@ async function ensurePeople(ids) {
 }
 async function loadChat() {
   if (!sb || !session) return;
-  const {data, error} = await sb.from('messages').select('id,user_id,body,created_at').order('created_at', {ascending: false}).limit(150);
+  const q = () => sb.from('messages').select(msgCols()).order('created_at', {ascending: false}).limit(150);
+  let {data, error} = await q();
+  if (error && /reply_to/i.test(error.message)) { hasReplyCol = false; ({data, error} = await q()); }
   chatLoaded = true;
   if (error) {
     chatError = /Could not find the table|does not exist/i.test(error.message) ? 'Chat isn\'t set up on the server yet (run chat.sql in Supabase).' : 'Could not load chat: ' + error.message;
@@ -1344,21 +1361,24 @@ function renderChat(scrollDown) {
 const VOICE_RE = /^\[voice\] (\S+) (\d+(?:\.\d+)?)$/;
 function msgRow(m, prev) {
   const p = chatPeople.get(m.user_id) || {username: 'Unknown player', face: '😶'};
-  const cont = prev && prev.user_id === m.user_id && new Date(m.created_at) - new Date(prev.created_at) < 5 * 60000;
+  const cont = !m.reply_to && prev && prev.user_id === m.user_id && new Date(m.created_at) - new Date(prev.created_at) < 5 * 60000;
   const canDel = session && (m.user_id === session.user.id || session.user.id === OWNER_ID);
+  const repliedToMe = !!(m.reply_to && session && m.user_id !== session.user.id && (chat.find(x => x.id === m.reply_to) || {}).user_id === session.user.id);
   const v = VOICE_RE.exec(m.body || ''), im = IMG_RE.exec(m.body || '');
   const content = v ? voicePlayer(v[1], +v[2]) : im ? chatImage(im, p) : h('div', {class: 'mtext'}, linkify(m.body));
   const mentioned = !v && !im && session && m.user_id !== session.user.id && mentionsMe(m.body);
   const face = faceEl(m.user_id, p.face); face.title = 'Open profile'; face.onclick = () => openUser(m.user_id);
-  return h('div', {class: 'msg' + (cont ? ' cont' : '') + (mentioned ? ' mentioned' : ''), 'data-id': m.id},
+  return h('div', {class: 'msg' + (cont ? ' cont' : '') + (m.reply_to ? ' hasreply' : '') + (mentioned || repliedToMe ? ' mentioned' : ''), 'data-id': m.id},
     face,
     h('div', {class: 'mbody'},
+      m.reply_to ? replyQuote(m.reply_to) : null,
       h('div', {class: 'mhead'},
         h('span', {class: 'mname' + (m.user_id === OWNER_ID ? ' owner' : ''), title: 'Open profile', onclick: () => openUser(m.user_id), text: p.username + (m.user_id === OWNER_ID ? ' 👑' : '')}),
         h('span', {class: 'small muted', text: new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})})),
       content,
       reactionRow(m.id)),
     h('div', {class: 'mtools'},
+      session && me && hasReplyCol ? h('button', {class: 'mreply', title: 'Reply', 'aria-label': 'Reply', text: '↩', onclick: e => { e.stopPropagation(); startReply(m); }}) : null,
       reactionsReady ? h('button', {class: 'mreact', title: 'Add reaction', 'aria-label': 'Add reaction', text: '😀', onclick: e => { e.stopPropagation(); openReactPicker(m.id, e.currentTarget); }}) : null,
       canDel ? h('button', {class: 'mdel danger', title: 'Delete message', text: '✕', onclick: () => deleteMsg(m)}) : null));
 }
@@ -1716,6 +1736,64 @@ function markRead() {
 window.addEventListener('focus', markRead);
 document.addEventListener('visibilitychange', markRead);
 // Add one message at the bottom without redrawing the rest (so playing voice messages keep playing).
+/* ---------- replies ----------
+   Hover a message → ↩ Reply. A bar above the chat box shows what you're replying to (✕ to
+   cancel); the reply shows a small quote of the original. Click the quote to jump to it.
+   Needs replies.sql (messages.reply_to). */
+let hasReplyCol = true, replyTo = null;
+const msgCols = () => 'id,user_id,body,created_at' + (hasReplyCol ? ',reply_to' : '');
+const msgSnippet = m => {
+  if (!m) return 'a message';
+  if (VOICE_RE.test(m.body || '')) return '🎤 Voice message';
+  if (IMG_RE.test(m.body || '')) return '🖼 Picture';
+  const t = String(m.body || '').replace(/\s+/g, ' ');
+  return t.length > 90 ? t.slice(0, 87) + '…' : t;
+};
+const replyCache = new Map();   // replied-to messages that are older than the loaded chat
+function replyQuote(id) {
+  const orig = chat.find(x => x.id === id) || replyCache.get(id);
+  const el = h('div', {class: 'rquote', title: 'Jump to the message', onclick: e => { e.stopPropagation(); jumpToMsg(id); }});
+  const fill = o => {
+    const p = o ? (chatPeople.get(o.user_id) || {}) : {};
+    el.replaceChildren(h('span', {class: 'rqarrow', text: '↪'}),
+      o ? faceEl(o.user_id, p.face) : null,
+      h('b', {text: o ? (p.username || 'Someone') : 'Deleted message'}),
+      h('span', {class: 'rqtext', text: o ? msgSnippet(o) : ''}));
+  };
+  fill(orig);
+  if (!orig && sb) sb.from('messages').select(msgCols()).eq('id', id).maybeSingle().then(async ({data}) => {
+    if (!data) return;
+    replyCache.set(id, data); await ensurePeople([data.user_id]); fill(data);
+  });
+  return el;
+}
+function jumpToMsg(id) {
+  const el = document.querySelector(`.msg[data-id="${id}"]`);
+  if (!el) { toast('That message is too old to show here.'); return; }
+  el.scrollIntoView({behavior: 'smooth', block: 'center'});
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+function startReply(m) {
+  replyTo = m;
+  const p = chatPeople.get(m.user_id) || {};
+  $('#replyName').textContent = p.username || 'Someone';
+  $('#replyText').textContent = msgSnippet(m);
+  $('#replyBar').hidden = false;
+  $('#chatInput').focus();
+}
+function clearReply() { replyTo = null; $('#replyBar').hidden = true; }
+$('#replyX').onclick = clearReply;
+$('#chatInput').addEventListener('keydown', e => { if (e.key === 'Escape' && replyTo) { clearReply(); e.stopPropagation(); } });
+// Sends one chat message (as a reply when the reply bar is open). Works before replies.sql too.
+async function insertMessage(body) {
+  const row = {user_id: session.user.id, body};
+  const rt = replyTo && hasReplyCol ? replyTo.id : null;
+  if (rt) row.reply_to = rt;
+  let r = await sb.from('messages').insert(row).select(msgCols()).single();
+  if (r.error && /reply_to/i.test(r.error.message)) { hasReplyCol = false; delete row.reply_to; r = await sb.from('messages').insert(row).select(msgCols()).single(); }
+  if (!r.error && rt) clearReply();
+  return r;
+}
 function appendMsg(m, prev) {
   const list = $('#chatList');
   if (!list.querySelector('.msg')) { renderChat(true); return; }
@@ -1792,7 +1870,7 @@ async function finishVoice() {
     const path = `${session.user.id}/voice-${crypto.randomUUID()}.webm`;
     const up = await sb.storage.from(BUCKET).upload(path, blob, {contentType: 'video/webm'});
     if (up.error) throw up.error;
-    const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body: `[voice] ${path} ${secs.toFixed(1)}`}).select('id,user_id,body,created_at').single();
+    const {data, error} = await insertMessage(`[voice] ${path} ${secs.toFixed(1)}`);
     if (error) { sb.storage.from(BUCKET).remove([path]); throw error; }
     pushToPhones(data);
     $('#chatMsg').textContent = '';
@@ -1845,7 +1923,7 @@ async function sendImage(file) {
     const path = `${session.user.id}/img-${crypto.randomUUID()}.jpg`;
     const up = await sb.storage.from(BUCKET).upload(path, j.blob, {contentType: 'image/jpeg'});
     if (up.error) throw up.error;
-    const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body: `[image] ${path} ${j.w} ${j.h}`}).select('id,user_id,body,created_at').single();
+    const {data, error} = await insertMessage(`[image] ${path} ${j.w} ${j.h}`);
     if (error) { sb.storage.from(BUCKET).remove([path]); throw error; }
     pushToPhones(data);
     if (!chat.some(x => x.id === data.id)) { const prev = chat[chat.length - 1]; chat.push(data); appendMsg(data, prev); }
@@ -1913,7 +1991,7 @@ $('#chatForm').addEventListener('submit', async e => {
   sendingChat = true; $('#chatSend').disabled = true; $('#imgBtn').disabled = true; $('#chatMsg').textContent = '';
   try {
     if (body) {
-      const {data, error} = await sb.from('messages').insert({user_id: session.user.id, body}).select('id,user_id,body,created_at').single();
+      const {data, error} = await insertMessage(body);
       if (error) { $('#chatMsg').textContent = /Slow down/i.test(error.message) ? 'Slow down! One message per second.' : 'Could not send: ' + error.message; return; }
       pushToPhones(data);
       inp.value = '';
