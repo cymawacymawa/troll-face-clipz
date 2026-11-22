@@ -662,7 +662,7 @@ function clipTags(c) {
   if (!c.app && !c.voice) return null;
   return h('div', {class: 'ctags'},
     c.app ? h('span', {class: 'ctag', text: c.app}) : null,
-    c.voice ? h('span', {class: 'ctag voice', text: '🎙 Clipped with voice'}) : null);
+    c.voice ? h('span', {class: 'ctag voice', text: 'Clipped with voice'}) : null);
 }
 async function loadClips() {
   const q = cols => sb.from('clips')
