@@ -462,7 +462,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
       <form id="chatForm" class="chatform">
         <div id="mentionPop" class="mpop" role="listbox" aria-label="Mention a player" hidden></div>
         <button type="button" id="imgBtn" class="imgbtn" title="Add pictures (or paste with Ctrl+V, or drop them here)" aria-label="Add pictures"></button>
-        <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden>
+        <input type="file" id="imgFile" accept="image/*" multiple hidden>
         <textarea id="chatInput" rows="1" maxlength="2000" placeholder="Say something… type @ to mention someone (Enter to send)" autocomplete="off" aria-label="Chat message"></textarea>
         <div id="recBar" class="recbar" hidden><span class="recdot"></span><span id="recTime">0:00</span><span class="muted small">Recording… click Send when you're done</span></div>
         <button type="button" id="recCancel" class="danger" title="Cancel recording" hidden>✕</button>
@@ -496,7 +496,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
         <span class="face" id="pAvatar">😏</span>
         <button type="button" id="pAvatarPick">Upload picture</button>
         <button type="button" class="danger" id="pAvatarDel" hidden>Remove</button>
-        <input type="file" id="pAvatarFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+        <input type="file" id="pAvatarFile" accept="image/*" hidden>
       </div>
     </div>
     <div class="f"><span class="small muted">Emoji (shown when you have no picture)</span><div class="faces" id="pFaces"></div></div>
@@ -524,7 +524,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
       <div id="dropTxt"><b>Drop an MP4 or WebM clip here</b><br><span class="muted small">or click to pick a file (up to 50 MB; bigger clips get compressed).</span></div>
       <video id="upPreview" controls playsinline hidden></video>
     </div>
-    <input type="file" id="upFile" accept="video/mp4,video/webm" hidden>
+    <input type="file" id="upFile" accept="video/mp4,video/webm,video/quicktime,video/*" hidden>
     <label class="f">Title <input type="text" id="upTitle" maxlength="80" placeholder="1v5 clutch, no big deal"></label>
     <label class="f">Caption <textarea id="upCaption" maxlength="500" placeholder="Problem?"></textarea></label>
     <div id="upInfo" class="small muted"></div>
@@ -592,7 +592,7 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
         <img id="bnPicImg" alt="" hidden>
         <button type="button" id="bnPicPick">🖼 Add picture</button>
         <button type="button" id="bnPicDel" class="danger" hidden>Remove</button>
-        <input type="file" id="bnPicFile" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden>
+        <input type="file" id="bnPicFile" accept="image/*" hidden>
       </div>
     </div>
     <div class="row"><span id="bnMsg" class="small muted"></span><div class="spacer"></div><button type="button" id="bnCancel">Cancel</button><button type="submit" class="danger" id="bnGo">🚫 Ban</button></div>
@@ -758,7 +758,7 @@ function faceEl(uid, emoji) {
 async function squareJpeg(file) {
   const url = URL.createObjectURL(file);
   try {
-    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('That file isn\'t a picture we can read.')); i.src = url; });
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('That picture can\'t be read here. iPhone photos: Settings → Camera → Formats → "Most Compatible".')); i.src = url; });
     const s = Math.min(img.naturalWidth, img.naturalHeight);
     const c = document.createElement('canvas'); c.width = c.height = 256;
     c.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 256, 256);
@@ -2013,7 +2013,7 @@ $('#imgDlg').addEventListener('click', e => { if (e.target === $('#imgDlg')) $('
 async function toChatJpeg(file) {
   const url = URL.createObjectURL(file);
   try {
-    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('That file isn\'t a picture we can read.')); i.src = url; });
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('That picture can\'t be read here. iPhone photos: Settings → Camera → Formats → "Most Compatible".')); i.src = url; });
     const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
     const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
     const g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, c.width, c.height);   // see-through PNGs get a black background
@@ -2046,7 +2046,8 @@ function addPictures(files) {
   if (!session || !me) { toast('Sign in to send pictures.', true); return; }
   let skipped = 0;
   for (const f of files) {
-    if (!/^image\//.test(f.type) || f.size > 25 * 1024 * 1024) { skipped++; continue; }
+    const isPic = /^image\//.test(f.type) || (!f.type && /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(f.name || ''));   // some phones send camera photos without a type
+    if (!isPic || f.size > 25 * 1024 * 1024) { skipped++; continue; }
     if (pending.length >= MAX_ATTACH) { $('#chatMsg').textContent = `Up to ${MAX_ATTACH} pictures at once.`; break; }
     pending.push({file: f, url: URL.createObjectURL(f)});
   }
@@ -2339,16 +2340,25 @@ drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
 drop.ondragleave = () => drop.classList.remove('over');
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]); };
 $('#upFile').onchange = e => { if (e.target.files[0]) pickFile(e.target.files[0]); e.target.value = ''; };
+// iPhones: asking for MP4 makes iOS itself convert camera videos (.mov) to a compatible MP4,
+// and it still offers "Take Video". Other phones get "any video" so the camera shows up.
+if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) $('#upFile').accept = 'video/mp4';
 async function pickFile(f) {
   const n = f.name.toLowerCase();
-  const type = /^video\/(mp4|webm)$/.test(f.type) ? f.type : n.endsWith('.mp4') ? 'video/mp4' : n.endsWith('.webm') ? 'video/webm' : '';
-  if (!type) { toast('Pick an MP4 or WebM video.', true); return; }
+  // MP4 / WebM as they are; phone camera formats in the same family (.mov, .m4v, .3gp) are
+  // uploaded as MP4 (Clipz Online only stores MP4/WebM).
+  const type = /^video\/(mp4|webm)$/.test(f.type) ? f.type
+    : n.endsWith('.webm') ? 'video/webm'
+    : /\.(mp4|m4v|mov|3gp|3gpp)$/.test(n) || /^video\/(quicktime|x-m4v|3gpp|3gpp2)$/.test(f.type) ? 'video/mp4'
+    : /^video\//.test(f.type) ? 'video/mp4' : '';
+  if (!type) { toast('That isn\'t a video. Pick or record a video.', true); return; }
   if (upUrl) URL.revokeObjectURL(upUrl);
   upUrl = URL.createObjectURL(f);
-  try { const v = await loadVideo(upUrl); upDuration = isFinite(v.duration) ? v.duration : 0; } catch (e) { toast(e.message, true); return; }
+  try { const v = await loadVideo(upUrl); upDuration = isFinite(v.duration) ? v.duration : 0; }
+  catch (e) { toast('This video can\'t be played here. On iPhone: Settings → Camera → Formats → "Most Compatible", then record again.', true); return; }
   upFile = f.type === type ? f : new File([f], f.name, {type});
   const pv = $('#upPreview'); pv.src = upUrl; pv.hidden = false; $('#dropTxt').hidden = true;
-  if (!$('#upTitle').value) $('#upTitle').value = f.name.replace(/\.(mp4|webm)$/i, '').slice(0, 80);
+  if (!$('#upTitle').value) $('#upTitle').value = f.name.replace(/\.(mp4|webm|m4v|mov|3gpp?)$/i, '').slice(0, 80);
   $('#upInfo').textContent = fmtTime(upDuration) + ' · ' + fmtSize(f.size) + (f.size > MAX_BYTES ? ' · Over 50 MB, so it gets compressed first (takes about ' + fmtTime(upDuration) + ').' : '');
   $('#upPost').disabled = false;
 }
