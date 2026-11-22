@@ -2265,10 +2265,12 @@ function loadVideo(src, attach) {
     v.muted = true; v.preload = 'auto'; v.playsInline = true; v.crossOrigin = 'anonymous';
     if (attach) { v.style.cssText = 'position:fixed;left:-10000px;top:0;width:320px;height:180px'; document.body.append(v); }
     v.onloadedmetadata = async () => { await fixDuration(v); res(v); };
-    v.onerror = () => rej(new Error('This file could not be read as a video.'));
+    v.onerror = () => rej(new Error('This video can\'t be read here. Samsung: Camera settings → turn off "HDR10+ video" and "High efficiency video", then record again.'));
     v.src = src;
   });
 }
+// Phones can only decode one big video at a time: let go of one before opening the next.
+function freeVideo(v) { try { v.pause(); v.removeAttribute('src'); v.load(); if (v.isConnected && v.id !== 'upPreview') v.remove(); } catch {} }
 function fixDuration(v) {
   if (isFinite(v.duration) && v.duration > 0) return Promise.resolve();
   return new Promise(res => {
@@ -2279,11 +2281,14 @@ function fixDuration(v) {
 }
 function seek(v, t) { return new Promise(res => { const hs = () => { v.removeEventListener('seeked', hs); res(); }; v.addEventListener('seeked', hs); v.currentTime = t; setTimeout(hs, 2500); }); }
 async function makeThumb(url) {
-  const v = await loadVideo(url); const d = isFinite(v.duration) ? v.duration : 0;
-  await seek(v, Math.min(d * 0.4, Math.max(0, d - 0.1)));
-  const c = document.createElement('canvas'); c.width = 480; c.height = Math.round(480 * (v.videoHeight || 9) / (v.videoWidth || 16));
-  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-  return {blob: await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8)), duration: d};
+  const v = await loadVideo(url);
+  try {
+    const d = isFinite(v.duration) ? v.duration : 0;
+    await seek(v, Math.min(d * 0.4, Math.max(0, d - 0.1)));
+    const c = document.createElement('canvas'); c.width = 480; c.height = Math.round(480 * (v.videoHeight || 9) / (v.videoWidth || 16));
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    return {blob: await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8)), duration: d};
+  } finally { freeVideo(v); }
 }
 const pickMime = () => ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
   .find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
@@ -2321,7 +2326,7 @@ async function shrink(file, duration, actx, onProgress) {
     rec.stop(); await stopped;
     const type = (rec.mimeType || 'video/webm').split(';')[0];
     return new File(chunks, 'clip.' + (type.includes('mp4') ? 'mp4' : 'webm'), {type});
-  } finally { v.pause(); v.remove(); URL.revokeObjectURL(url); }
+  } finally { freeVideo(v); URL.revokeObjectURL(url); }
 }
 
 /* ---------- upload ---------- */
@@ -2354,8 +2359,8 @@ async function pickFile(f) {
   if (!type) { toast('That isn\'t a video. Pick or record a video.', true); return; }
   if (upUrl) URL.revokeObjectURL(upUrl);
   upUrl = URL.createObjectURL(f);
-  try { const v = await loadVideo(upUrl); upDuration = isFinite(v.duration) ? v.duration : 0; }
-  catch (e) { toast('This video can\'t be played here. On iPhone: Settings → Camera → Formats → "Most Compatible", then record again.', true); return; }
+  try { const v = await loadVideo(upUrl); upDuration = isFinite(v.duration) ? v.duration : 0; freeVideo(v); }
+  catch (e) { toast('This video can\'t be played here. Samsung: Camera settings → turn off "HDR10+ video" and "High efficiency video". iPhone: Settings → Camera → Formats → "Most Compatible". Then record again.', true); return; }
   upFile = f.type === type ? f : new File([f], f.name, {type});
   const pv = $('#upPreview'); pv.src = upUrl; pv.hidden = false; $('#dropTxt').hidden = true;
   if (!$('#upTitle').value) $('#upTitle').value = f.name.replace(/\.(mp4|webm|m4v|mov|3gpp?)$/i, '').slice(0, 80);
@@ -2371,6 +2376,7 @@ $('#upPost').onclick = async () => {
   let vpath = null, tpath = null;
   try {
     let file = upFile;
+    freeVideo($('#upPreview'));   // phones: the preview holds the only video decoder; give it back during upload
     const fromTFC = await hasTFCStamp(upFile);   // was this recorded with Troll Face Clipz?
     if (file.size > MAX_BYTES) {
       $('#upPreview').pause(); await actx.resume();
@@ -2393,7 +2399,10 @@ $('#upPost').onclick = async () => {
   } catch (e) {
     toast('Upload failed: ' + errMsg(e), true);
     const left = [vpath, tpath].filter(Boolean); if (left.length) sb.storage.from(BUCKET).remove(left);
-  } finally { busy = false; $('#upPost').disabled = !upFile; actx.close().catch(() => {}); }
+  } finally {
+    busy = false; $('#upPost').disabled = !upFile; actx.close().catch(() => {});
+    if ($('#upDlg').open && upUrl) $('#upPreview').src = upUrl;   // upload failed: show the preview again
+  }
 };
 
 /* ---------- player ---------- */
