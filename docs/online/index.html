@@ -69,6 +69,7 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .ctags{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
 .ctag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:rgba(215,255,58,.12);color:var(--acc);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ctag.voice{background:rgba(168,85,247,.18);color:#c79bff}
+.ctag.mobile{background:rgba(56,152,255,.18);color:#7cc0ff}
 #pRxBox{display:flex;flex-direction:column;gap:8px}
 /* replies */
 .rquote{display:flex;align-items:center;gap:6px;min-width:0;margin:0 0 2px;font-size:12px;color:var(--muted);cursor:pointer}
@@ -656,20 +657,23 @@ const errMsg = e => (e && (e.message || e.error_description)) || String(e);
 
 /* ---------- data ---------- */
 let hasHighlightCol = true;   // false until clip-extras.sql adds clips.highlight
+let hasMobileCol = true;      // false until mobile-tag.sql adds clips.mobile
 let hasTagCols = true;        // false until clip-tags.sql adds clips.app / clips.voice
 // Tags like in the app's library: the app/game that was in front + "🎙 Clipped with voice"
 function clipTags(c) {
-  if (!c.app && !c.voice) return null;
+  if (!c.app && !c.voice && !c.mobile) return null;
   return h('div', {class: 'ctags'},
     c.app ? h('span', {class: 'ctag', text: c.app}) : null,
-    c.voice ? h('span', {class: 'ctag voice', text: 'Clipped with voice'}) : null);
+    c.voice ? h('span', {class: 'ctag voice', text: 'Clipped with voice'}) : null,
+    c.mobile ? h('span', {class: 'ctag mobile', text: 'Mobile Post'}) : null);
 }
 async function loadClips() {
   const q = cols => sb.from('clips')
     .select('id,user_id,title,caption,video_path,thumb_path,duration,size,mime,created_at,' + cols + 'profiles!clips_user_id_fkey(username,face),likes(count)')
     .order('created_at', {ascending: false}).limit(300);
-  const extra = () => (hasHighlightCol ? 'highlight,' : '') + (hasTagCols ? 'app,voice,' : '');
+  const extra = () => (hasHighlightCol ? 'highlight,' : '') + (hasTagCols ? 'app,voice,' : '') + (hasMobileCol ? 'mobile,' : '');
   let {data, error} = await q(extra());
+  if (error && /mobile/i.test(error.message)) { hasMobileCol = false; ({data, error} = await q(extra())); }   // before mobile-tag.sql
   if (error && /\bapp\b|voice/i.test(error.message)) { hasTagCols = false; ({data, error} = await q(extra())); }       // before clip-tags.sql
   if (error && /highlight/i.test(error.message)) { hasHighlightCol = false; ({data, error} = await q(extra())); }   // before clip-extras.sql
   loaded = true;
@@ -2415,8 +2419,11 @@ $('#upPost').onclick = async () => {
     stage('Uploading thumbnail…', 0.92);
     if (th.blob) { tpath = `${uid}/${id}.jpg`; r = await sb.storage.from(BUCKET).upload(tpath, th.blob, {contentType: 'image/jpeg'}); if (r.error) tpath = null; }
     stage('Posting…', 0.97);
-    r = await sb.from('clips').insert({id, title: $('#upTitle').value.trim().slice(0, 80) || 'Untitled clip', caption: $('#upCaption').value.trim(),
-      video_path: vpath, thumb_path: tpath, duration: th.duration || upDuration, size: file.size, mime: file.type});
+    const row = {id, title: $('#upTitle').value.trim().slice(0, 80) || 'Untitled clip', caption: $('#upCaption').value.trim(),
+      video_path: vpath, thumb_path: tpath, duration: th.duration || upDuration, size: file.size, mime: file.type};
+    if (IS_WEB && IS_PHONE) row.mobile = true;   // tag: Mobile Post
+    r = await sb.from('clips').insert(row);
+    if (r.error && row.mobile && /mobile/i.test(r.error.message)) { delete row.mobile; r = await sb.from('clips').insert(row); }   // before mobile-tag.sql
     if (r.error) throw r.error;
     stage('Posted!', 1); $('#upDlg').close(); toast('Clip posted 😏'); setFilter('all'); loadClips();
   } catch (e) {
