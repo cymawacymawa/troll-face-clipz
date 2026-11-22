@@ -698,7 +698,7 @@ function renderMe() {
   $('#fMine').hidden = !me;
   $('#meFace').replaceWith(Object.assign(faceEl(me ? me.id : null, me ? me.face : '😏'), {id: 'meFace'}));
   $('#meName').textContent = me ? me.username : 'Finish account';
-  if (typeof updatePushUI === 'function') { updatePushUI(); sendWebPresence(); }
+  if (typeof updatePushUI === 'function') { updatePushUI(); sendWebPresence(); startLiveOnline(); }
 }
 /* ---------- players ---------- */
 let players = [], playersLoaded = false;
@@ -713,16 +713,26 @@ async function loadPlayers() {
   if (filter.kind === 'players') render();
 }
 // "● Online now · v1.9.6" / "Last online 2 h ago · v1.9.5". The app checks in every 2 minutes.
+const kindLabel = (kind, v) => kind === 'mobile' ? '📱 Mobile web' : kind === 'web' ? '🌐 Web' : v ? 'v' + v : '';
 function presenceLine(p) {
-  if (!p.last_seen && !p.app_version) return null;
+  // Live presence (see "live online" below) when it's connected; otherwise the 2-minute check-ins.
+  const live = livePresence && livePresence.get(p.id);
+  if (live && live.length) {
+    const app = live.find(m => m.kind === 'app'), m = app || live.find(x => x.kind === 'mobile') || live[0];
+    const label = kindLabel(m.kind, m.v);
+    return h('div', {class: 'small presence on', text: '● Online now' + (label ? ' · ' + label : '')});
+  }
+  const left = leftAt.get(p.id);
+  const seen = left && (!p.last_seen || left > new Date(p.last_seen).getTime()) ? new Date(left).toISOString() : p.last_seen;
+  if (!seen && !p.app_version) return null;
   const parts = [];
   let on = false;
-  if (p.last_seen) {
-    const mins = (Date.now() - new Date(p.last_seen).getTime()) / 60000;
-    on = mins < 5;
-    parts.push(on ? 'Online now' : 'Last online ' + ago(p.last_seen));
+  if (seen) {
+    const mins = (Date.now() - new Date(seen).getTime()) / 60000;
+    on = !livePresence && mins < 5;   // live presence connected = it's authoritative
+    parts.push(on ? 'Online now' : 'Last online ' + ago(seen));
   }
-  if (p.app_version) parts.push(p.app_version === 'mobile' ? '📱 Mobile web' : p.app_version === 'web' ? '🌐 Web' : 'v' + p.app_version);
+  if (p.app_version) parts.push(kindLabel(p.app_version === 'mobile' || p.app_version === 'web' ? p.app_version : 'app', p.app_version));
   return h('div', {class: 'small presence' + (on ? ' on' : ''), text: (on ? '● ' : '') + parts.join(' · ')});
 }
 function renderPlayers(grid) {
@@ -2210,6 +2220,53 @@ async function disablePush() {
 $('#notifBtn').onclick = () => pushOn ? disablePush() : enablePush();
 $('#pushBarOn').onclick = enablePush;
 $('#pushBarX').onclick = () => { try { localStorage.setItem('tfc-pushbar-x', '1'); } catch {} updatePushUI(); };
+/* ---------- live online ----------
+   Everyone joins the Realtime presence room "tfc-online": the Windows app (as "app"), and this
+   page when it's opened as a website (phone or browser). This page watches the room, so the
+   Players list and profiles flip to "Online now" / "Last online just now" within a second or two. */
+let livePresence = null;          // uid -> [{kind, v}] while connected; null = not connected (use check-ins)
+const leftAt = new Map();         // uid -> when we saw them go offline
+let liveCh = null, liveKey = null, liveRenderT = null;
+function liveRender() {
+  clearTimeout(liveRenderT);
+  liveRenderT = setTimeout(() => {
+    if (filter.kind === 'players') render();
+    const dlg = $('#userDlg');
+    if (dlg.open && dlg.dataset.uid) renderUser(dlg.dataset.uid, knownPeople().get(dlg.dataset.uid));
+  }, 250);
+}
+function liveTrack() {
+  if (!liveCh || !IS_WEB || !session || bannedNow) return;
+  liveCh.track({uid: session.user.id, kind: IS_PHONE ? 'mobile' : 'web'}).catch(() => {});
+}
+function startLiveOnline() {
+  if (!sb) return;
+  const key = IS_WEB && session ? session.user.id : 'watch';
+  if (liveCh && liveKey === key) return;
+  if (liveCh) { sb.removeChannel(liveCh); liveCh = null; }
+  liveKey = key;
+  const ch = sb.channel('tfc-online', {config: {presence: {key: key === 'watch' ? 'watch-' + Math.random().toString(36).slice(2) : key, enabled: true}}});
+  liveCh = ch;
+  ch.on('presence', {event: 'sync'}, () => {
+    const next = new Map();
+    for (const metas of Object.values(ch.presenceState())) for (const m of metas) {
+      if (!m.uid) continue;
+      if (!next.has(m.uid)) next.set(m.uid, []);
+      next.get(m.uid).push({kind: m.kind, v: m.v});
+    }
+    if (livePresence) for (const uid of livePresence.keys()) if (!next.has(uid)) leftAt.set(uid, Date.now());
+    for (const uid of next.keys()) leftAt.delete(uid);
+    livePresence = next;
+    liveRender();
+  }).subscribe(status => {
+    if (liveCh !== ch) return;
+    if (status === 'SUBSCRIBED') liveTrack();
+    else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { livePresence = null; liveRender(); }
+  });
+}
+// phones pause pages in the background: say hi again when it comes back
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') liveTrack(); });
+
 // "● Online now · 📱 Mobile web" in the Players list (the Windows app sends its version instead).
 async function sendWebPresence() {
   if (!IS_WEB || !sb || !session || bannedNow || document.visibilityState !== 'visible') return;
