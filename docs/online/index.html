@@ -67,11 +67,33 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .pwform input{background:var(--panel)}
 /* ⭐ highlight + clip reactions */
 .hlbadge{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.78);color:#ffd84a;padding:1px 7px;border-radius:6px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
-.hlrow{display:flex;align-items:center;gap:10px}
-.hltrack{position:relative;flex:1;height:10px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);cursor:pointer}
-.hlplay{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:6px;background:rgba(215,255,58,.35)}
-.hlmark{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#ffd84a;box-shadow:0 0 0 3px rgba(255,216,74,.3),0 0 12px rgba(255,216,74,.7)}
-.hlrow button{white-space:nowrap}
+/* our own video controls (so the ⭐ can sit on the seek bar) */
+.vwrap{position:relative;border-radius:10px;overflow:hidden;background:#000}
+.vwrap video{display:block;cursor:pointer}
+.vwrap:fullscreen{border-radius:0;display:flex;align-items:center}
+.vwrap:fullscreen video{width:100%;height:100%;max-height:none!important;border-radius:0;object-fit:contain}
+.vctl{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:26px 12px 10px;
+  background:linear-gradient(transparent,rgba(0,0,0,.78));transition:opacity .25s}
+.vwrap.idle .vctl{opacity:0;pointer-events:none}
+.vwrap.idle video{cursor:none}
+.vcb{background:none;border:none;padding:4px;color:#fff;display:grid;place-items:center;flex:none}
+.vcb:hover:not(:disabled){background:none;color:var(--acc)}
+.vcb svg{width:22px;height:22px}
+.vctime{color:#fff;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
+.vseek{position:relative;flex:1;height:22px;cursor:pointer;touch-action:none;min-width:60px}
+.vtrack{position:absolute;left:0;right:0;top:50%;height:5px;margin-top:-2.5px;border-radius:4px;background:rgba(255,255,255,.25);overflow:hidden;transition:height .12s,margin .12s}
+.vseek:hover .vtrack{height:7px;margin-top:-3.5px}
+.vbuf{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.25)}
+.vfill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--acc)}
+.vknob{position:absolute;top:50%;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;background:#fff;box-shadow:0 0 4px rgba(0,0,0,.5);pointer-events:none}
+.vhl{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#ffd84a;z-index:2;cursor:pointer;
+  box-shadow:0 0 0 3px rgba(255,216,74,.35),0 0 12px rgba(255,216,74,.85);transition:transform .12s}
+.vhl::after{content:'⭐';position:absolute;left:50%;bottom:13px;transform:translateX(-50%);font-size:14px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+.vhl:hover{transform:scale(1.3)}
+.vcvol{-webkit-appearance:none;appearance:none;width:70px;height:4px;border-radius:4px;flex:none;cursor:pointer;
+  background:linear-gradient(to right,#fff var(--v,100%),rgba(255,255,255,.3) var(--v,100%))}
+.vcvol::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;border:none}
+@media (max-width:560px){.vcvol{display:none}.vctl{gap:6px;padding:22px 8px 8px}.vctime{font-size:12px}}
 .crx{display:inline-flex;gap:4px;margin-right:6px}
 .crx:empty{display:none}
 .prx .rx.addclip{opacity:1;color:var(--muted)}
@@ -498,10 +520,20 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
 <dialog id="playDlg" class="wide">
   <div class="dh"><h3 id="pTitle"></h3><button id="pClose" aria-label="Close">✕</button></div>
   <div class="db">
-    <video id="pVideo" controls playsinline></video>
-    <div id="pHlRow" class="hlrow" hidden>
-      <div class="hltrack" id="pHlTrack" title="Click to jump"><span class="hlplay" id="pHlPlay"></span><span class="hlmark" id="pHlMark" title="Highlight"></span></div>
-      <button id="pHlBtn">⭐ Jump to highlight</button>
+    <div class="vwrap" id="pWrap">
+      <video id="pVideo" playsinline></video>
+      <div class="vctl" id="vcBar">
+        <button class="vcb" id="vcPlay" aria-label="Play"></button>
+        <span class="vctime" id="vcTime">0:00 / 0:00</span>
+        <div class="vseek" id="vcSeek" role="slider" aria-label="Seek" tabindex="0">
+          <div class="vtrack"><div class="vbuf" id="vcBuf"></div><div class="vfill" id="vcFill"></div></div>
+          <span class="vhl" id="vcHl" title="⭐ Highlight" hidden></span>
+          <span class="vknob" id="vcKnob"></span>
+        </div>
+        <button class="vcb" id="vcMute" aria-label="Mute"></button>
+        <input type="range" class="vcvol" id="vcVol" min="0" max="1" step="0.01" aria-label="Volume">
+        <button class="vcb" id="vcFull" aria-label="Fullscreen"></button>
+      </div>
     </div>
     <div class="row">
       <div class="byline" id="pBy" style="font-size:13px"></div>
@@ -2203,13 +2235,7 @@ function openClip(c) {
   $('#pCaption').textContent = c.caption || '';
   $('#pShareBox').hidden = true;
   $('#pRxBox').replaceChildren(clipReactionRow(c.id));
-  // ⭐ highlight: a marker on a little timeline + a jump button
-  const hl = c.highlight != null && isFinite(c.highlight) ? +c.highlight : null;
-  $('#pHlRow').hidden = hl == null;
-  if (hl != null) {
-    $('#pHlBtn').textContent = '⭐ Jump to highlight (' + fmtTime(hl) + ')';
-    $('#pHlMark').style.left = Math.min(100, hl / Math.max(0.1, c.duration || hl + 1) * 100) + '%';
-  }
+  vcUpdate();   // ⭐ highlight marker on the seek bar
   const del = $('#pDel'); del.textContent = 'Delete'; delete del.dataset.armed; del.hidden = !(session && c.user_id === session.user.id);
   updateLike();
   if (location.hash !== '#' + c.id) history.replaceState(null, '', '#' + c.id);
@@ -2222,16 +2248,81 @@ function closePlayer() {
   history.replaceState(null, '', location.pathname + location.search);
 }
 $('#pClose').onclick = closePlayer;
-// ⭐ jump: start a moment before the highlight so you see it coming
-$('#pHlBtn').onclick = () => { if (!current || current.highlight == null) return; const v = $('#pVideo'); v.currentTime = Math.max(0, current.highlight - 1.5); v.play().catch(() => {}); };
-$('#pHlTrack').onclick = e => {
-  const v = $('#pVideo'), r = e.currentTarget.getBoundingClientRect(), d = (isFinite(v.duration) && v.duration) || (current && current.duration) || 0;
-  if (d) v.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * d;
+/* ---------- video controls ----------
+   Our own control bar (instead of the browser's) so the ⭐ highlight can sit right on the
+   seek bar. Click ⭐ to jump to it. Click the video or press Space to play/pause, ←/→ skip 5 s,
+   F for fullscreen. The bar hides after 2.5 s of no mouse movement while playing. */
+const VC_ICONS = {
+  play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="4.5" height="15" rx="1.2" fill="currentColor"/><rect x="14" y="4.5" width="4.5" height="15" rx="1.2" fill="currentColor"/></svg>',
+  full: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>',
+  exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>',
 };
-$('#pVideo').addEventListener('timeupdate', () => {
-  const v = $('#pVideo'), d = (isFinite(v.duration) && v.duration) || (current && current.duration) || 0;
-  if (d) $('#pHlPlay').style.width = Math.min(100, v.currentTime / d * 100) + '%';
-  if (current && current.highlight != null && d) $('#pHlMark').style.left = Math.min(100, current.highlight / d * 100) + '%';
+const pv = $('#pVideo');
+const vcDur = () => (isFinite(pv.duration) && pv.duration) || (current && current.duration) || 0;
+let vcDragging = false, vcHideT = null;
+try { const s = JSON.parse(localStorage.getItem('tfc-player-vol') || 'null'); if (s) { pv.volume = +s.v; pv.muted = !!s.m; } } catch {}
+function vcUpdate() {
+  const d = vcDur(), t = pv.currentTime || 0, pct = d ? Math.min(100, t / d * 100) : 0;
+  $('#vcFill').style.width = pct + '%'; $('#vcKnob').style.left = pct + '%';
+  $('#vcTime').textContent = fmtTime(t) + ' / ' + fmtTime(d);
+  try { const b = pv.buffered; $('#vcBuf').style.width = (d && b.length ? Math.min(100, b.end(b.length - 1) / d * 100) : 0) + '%'; } catch {}
+  $('#vcPlay').innerHTML = pv.paused ? VC_ICONS.play : VC_ICONS.pause;
+  $('#vcPlay').setAttribute('aria-label', pv.paused ? 'Play' : 'Pause');
+  $('#vcMute').innerHTML = pv.muted || pv.volume === 0 ? ICON_MUTE : pv.volume < 0.5 ? ICON_VOL_LOW : ICON_VOL;
+  const vol = pv.muted ? 0 : pv.volume; $('#vcVol').value = vol; $('#vcVol').style.setProperty('--v', vol * 100 + '%');
+  $('#vcFull').innerHTML = document.fullscreenElement ? VC_ICONS.exit : VC_ICONS.full;
+  const hl = current && current.highlight != null && isFinite(current.highlight) ? +current.highlight : null;
+  $('#vcHl').hidden = hl == null || !d;
+  if (hl != null && d) { $('#vcHl').style.left = Math.min(100, hl / d * 100) + '%'; $('#vcHl').title = '⭐ Highlight at ' + fmtTime(hl) + ' (click to jump)'; }
+}
+function vcShow() {
+  $('#pWrap').classList.remove('idle');
+  clearTimeout(vcHideT);
+  vcHideT = setTimeout(() => { if (!pv.paused && !vcDragging) $('#pWrap').classList.add('idle'); }, 2500);
+}
+const vcToggle = () => { if (pv.paused) pv.play().catch(() => {}); else pv.pause(); };
+['timeupdate', 'play', 'pause', 'durationchange', 'loadedmetadata', 'progress', 'volumechange'].forEach(ev => pv.addEventListener(ev, vcUpdate));
+pv.addEventListener('pause', vcShow); pv.addEventListener('play', vcShow);
+pv.addEventListener('click', () => { vcToggle(); vcShow(); });
+pv.addEventListener('dblclick', () => $('#vcFull').click());
+$('#vcPlay').onclick = vcToggle;
+$('#pWrap').addEventListener('pointermove', vcShow);
+$('#pWrap').addEventListener('pointerdown', vcShow);
+const seekTo = e => {
+  const r = $('#vcSeek').getBoundingClientRect(), d = vcDur();
+  if (d) { pv.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * d; vcUpdate(); }
+};
+$('#vcSeek').addEventListener('pointerdown', e => {
+  if (e.target.id === 'vcHl') return;   // the ⭐ has its own click
+  vcDragging = true; $('#vcSeek').setPointerCapture(e.pointerId); seekTo(e);
+});
+$('#vcSeek').addEventListener('pointermove', e => { if (vcDragging) seekTo(e); });
+$('#vcSeek').addEventListener('pointerup', () => { vcDragging = false; vcShow(); });
+$('#vcSeek').addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { pv.currentTime = Math.min(vcDur(), pv.currentTime + 5); e.preventDefault(); }
+  if (e.key === 'ArrowLeft') { pv.currentTime = Math.max(0, pv.currentTime - 5); e.preventDefault(); }
+});
+// ⭐ click: jump a moment before the highlight so you see it coming
+$('#vcHl').onclick = e => {
+  e.stopPropagation();
+  if (!current || current.highlight == null) return;
+  pv.currentTime = Math.max(0, current.highlight - 1.5); pv.play().catch(() => {});
+};
+const saveVol = () => { try { localStorage.setItem('tfc-player-vol', JSON.stringify({v: pv.volume, m: pv.muted})); } catch {} };
+$('#vcMute').onclick = () => { pv.muted = !pv.muted; if (!pv.muted && pv.volume === 0) pv.volume = 0.6; saveVol(); };
+$('#vcVol').oninput = e => { pv.volume = +e.target.value; pv.muted = pv.volume === 0; saveVol(); };
+$('#vcFull').onclick = () => {
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  else $('#pWrap').requestFullscreen().catch(() => {});
+};
+document.addEventListener('fullscreenchange', vcUpdate);
+$('#playDlg').addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,button')) return;
+  if (e.key === ' ' || e.key === 'k') { vcToggle(); vcShow(); e.preventDefault(); }
+  if (e.key === 'f') $('#vcFull').click();
+  if (e.key === 'ArrowRight') { pv.currentTime = Math.min(vcDur(), pv.currentTime + 5); vcShow(); }
+  if (e.key === 'ArrowLeft') { pv.currentTime = Math.max(0, pv.currentTime - 5); vcShow(); }
 });
 $('#playDlg').addEventListener('cancel', e => { e.preventDefault(); closePlayer(); });
 function updateLike() {
