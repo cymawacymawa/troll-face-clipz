@@ -65,6 +65,16 @@ header{position:sticky;top:0;z-index:5;background:rgba(12,12,14,.92);backdrop-fi
 .pwdots{flex:1;letter-spacing:3px;color:var(--muted)}
 .pwform{display:flex;flex-direction:column;gap:10px;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
 .pwform input{background:var(--panel)}
+/* 💬 mini chat over a game: only the chat */
+.minibar{display:none}
+html.mini .minibar{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 12px;background:var(--panel);border-bottom:1px solid var(--line);font-weight:700;-webkit-app-region:drag;user-select:none}
+html.mini .minibar button{-webkit-app-region:no-drag;padding:4px 10px;border:none;background:none;color:var(--muted)}
+html.mini .minibar button:hover:not(:disabled){color:var(--text);background:var(--panel2)}
+html.mini header,html.mini #storageBox,html.mini .toolbar,html.mini #notice,html.mini #grid,html.mini #pushBar{display:none!important}
+html.mini .wrap{padding-left:8px;padding-right:8px}
+html.mini main{padding-block:6px 6px}
+html.mini #chat{height:calc(100vh - 54px)!important;min-height:0}
+html.mini body{overflow:hidden}
 /* clip tags (app/game + "clipped with voice") */
 .ctags{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
 .ctag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:rgba(215,255,58,.12);color:var(--acc);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -428,6 +438,9 @@ html.bg-on .card,html.bg-on .pcard,html.bg-on .chatlist,html.bg-on .storagebox,h
 </style>
 </head>
 <body>
+<!-- mini chat window over a game (opened by clicking the in-game chat pop-up) -->
+<script>if (/[?&]mini=1/.test(location.search)) document.documentElement.classList.add('mini');</script>
+<div class="minibar" id="miniBar"><span>💬 Clipz chat</span><span class="spacer"></span><span class="small muted">Click the game to go back</span><button id="miniClose" title="Back to the game (Esc)" aria-label="Close">✕</button></div>
 <header>
   <div class="wrap hbar">
     <a class="banner" href="#" id="home" aria-label="Troll Face Clipz Online: show everyone's clips"></a>
@@ -2704,6 +2717,17 @@ if (!window.supabase) {
   loadClips();
   startClipsLive();
   if (new URLSearchParams(location.search).has('chat')) setFilter('chat');   // opened from a chat notification
+  // mini chat over a game: ✕ / Esc goes back to the game (the window just hides)
+  if (document.documentElement.classList.contains('mini')) {
+    $('#miniClose').onclick = () => window.close();
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (document.querySelector('dialog[open]') || document.getElementById('reactPicker') || replyTo || !$('#mentionPop').hidden) return;   // Esc closes those first
+      window.close();
+    });
+    // back from the game: jump to the newest message and put the cursor in the box
+    window.addEventListener('focus', () => { const l = $('#chatList'); if (l) l.scrollTop = l.scrollHeight; setTimeout(() => $('#chatInput').focus(), 50); });
+  }
   try { if (sessionStorage.getItem('tfc-unbanned')) { sessionStorage.removeItem('tfc-unbanned'); toast('✅ You have been unbanned. Welcome back!'); if (IS_WEB) playSfx('unban.mp3', 0.25); } } catch {}
   window.addEventListener('message', e => {
     if (typeof e.data === 'string' && e.data.startsWith('tfc-bg-on')) {
